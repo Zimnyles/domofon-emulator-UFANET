@@ -3,8 +3,8 @@ services:
     container_name: DomofonEmualtorDataBase
     image: postgres:16.4
     environment:
-      POSTGRES_USER: domofon
-      POSTGRES_PASSWORD: domofon
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: my_pass
       POSTGRES_DB: domofon
       PGDATA: /data/postgres
     volumes:
@@ -28,8 +28,8 @@ services:
     environment:
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USER=domofon
-      - DB_PASSWORD=domofon
+      - DB_USER=postgres
+      - DB_PASSWORD=my_pass
       - DB_NAME=domofon
       - MQTT_HOST=mqtt
     ports:
