@@ -1,1 +1,5 @@
 package home
+
+func test(){
+	
+}
