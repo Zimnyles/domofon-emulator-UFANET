@@ -1,0 +1,54 @@
+services:
+  db:
+    container_name: DomofonEmualtorDataBase
+    image: postgres:16.4
+    environment:
+      POSTGRES_USER: domofon
+      POSTGRES_PASSWORD: domofon
+      POSTGRES_DB: domofon
+      PGDATA: /data/postgres
+    volumes:
+      - ./postgres-data:/data/postgres
+    ports:
+      - "5432:5432"
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/server/mqtt/config/mqtt.conf
+    command: /usr/sbin/mosquitto -c /server/mqtt/config/mqtt.conf
+
+  server:
+    image: golang:1.24.4
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "go run ./server/cmd/main.go"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=domofon
+      - DB_PASSWORD=domofon
+      - DB_NAME=domofon
+      - MQTT_HOST=mqtt
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - mqtt
+    restart: unless-stopped
+
+  client:
+    image: golang:1.24.4
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "go run ./client/cmd/main.go"
+    environment:
+      - MQTT_HOST=mqtt
+    depends_on:
+      - mqtt
+    deploy:
+      replicas: 3
+    restart: unless-stopped
