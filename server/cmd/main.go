@@ -6,6 +6,8 @@ import (
 	"domofonEmulator/pkg/logger"
 	"domofonEmulator/pkg/middleware"
 	"domofonEmulator/pkg/session"
+	"domofonEmulator/server/mqtt"
+	"time"
 
 	"github.com/gofiber/contrib/fiberzerolog"
 	"github.com/gofiber/fiber/v2"
@@ -33,6 +35,19 @@ func main() {
 	serverApp := fiber.New()
 	serverApp.Static("/web/static", "./web/static")
 
+	//mqtt
+	mqqtConfig := config.NewMQTTConfig()
+	mqqtClient, err := mqtt.Connect(mqqtConfig.Broker)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Failed to connect to MQTT broker")
+		return
+	}
+
+	timer := time.NewTicker(1 * time.Second)
+	for t := range timer.C {
+		mqqtClient.Publish("test", 0, false, t.String())
+	}
+
 	//middlewares
 	serverApp.Use(fiberzerolog.New(fiberzerolog.Config{
 		Logger: logger,
@@ -40,5 +55,5 @@ func main() {
 	serverApp.Use(recover.New())
 	serverApp.Use(middleware.AuthMiddleware(store))
 
-	serverApp.Listen(":3030")
+	serverApp.Listen(":3031")
 }

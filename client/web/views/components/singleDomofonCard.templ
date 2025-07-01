@@ -1,0 +1,84 @@
+package components
+
+import "github.com/rvflash/elapsed"
+import "time"
+
+type SingleDomofonCardProps struct{
+    ID int
+    MAC string
+    DomofonStatus string
+    DoorStatus string
+    Adress string
+    NumberOfApartments int
+    CreatedAt time.Time
+}
+
+templ SingleDomofonCard(props SingleDomofonCardProps) {
+    @SingleDomofonCardStyle()
+    {{ date := elapsed.LocalTime(props.CreatedAt, "ru") }}
+    {{ doorStatusRu := ""
+       if props.DoorStatus == "Closed" {
+        doorStatusRu = "закрыта"
+       } else {
+        doorStatusRu = "открыта"
+       } }}
+        <div class={
+        templ.KV("domofoncard-wrapper_ON", props.DomofonStatus == "ON"),
+        templ.KV("domofoncard-wrapper_OFF", props.DomofonStatus == "OFF")}>
+            <div class="domofoncard-header">
+                <div class="domofoncard-icon"><img width="120px" src="/client/web/static/icons/intercomIcon.png"></div>
+                <div class="domofoncard-adress"><span> { props.Adress } </span></div>
+            </div>
+            <div class="domofoncard-text">
+                <div class="domofoncard-id"><span> ID: { props.ID } </span></div>
+                <div class="domofoncard-MAC"><span> MAC: { props.MAC } </span></div>
+                <div class="domofoncard-domofonStatus"><span> Статус домофона: { props.DomofonStatus } </span></div>
+                <div class="domofoncard-doorStatus"><span> Статус двери: { doorStatusRu } </span></div>
+                <div class="domofoncard-numsOfAp"><span> Количетсво квартир: { props.NumberOfApartments } </span></div>
+                <div class="domofoncard-createdAt"><span> Дата установки: { date }</span></div>
+            </div>
+        </div>
+}
+
+templ SingleDomofonCardStyle() {
+    <style>
+        .domofoncard-text{
+            color: rgb(178, 178, 178);
+            font-size: 15px;
+            gap: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: left;
+            margin-left: 5px;
+            margin-top: 5px;
+        }
+        .domofoncard-header{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .domofoncard-wrapper_ON{
+            color: white;
+            display: flex;
+            flex-direction: column;
+            background-color: rgb(59, 59, 59);
+            min-width: 250px;
+            max-width: 250px;
+            min-height: 320px;
+            max-height: 320px;
+            border: 5px solid rgb(0, 255, 68);
+        }
+        .domofoncard-wrapper_OFF{
+            color: white;
+            display: flex;
+            flex-direction: column;
+            background-color: rgb(59, 59, 59);
+            min-width: 250px;
+            max-width: 250px;
+            min-height: 320px;
+            max-height: 320px;
+            border: 5px solid red;
+        }
+    </style>
+}

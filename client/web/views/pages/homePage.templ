@@ -1,0 +1,97 @@
+package pages
+
+import "domofonEmulator/client/web/views/layout"
+import "domofonEmulator/client/web/views/components"
+import "time"
+
+
+templ HomePage() {
+    @layout.Layout(layout.LayoutProps{
+        Title: "DomofonPanel",
+        MetaDescription: "DomofonPanel",
+    }){
+    <main>
+    @HomePageStyle()
+        <div class="page-wrapper">
+            <div class="domofons-wrapper">
+                <div class="all-domofons--wrapper">
+                    <div>
+                        <span>Все домофоны</span>
+                    </div>
+                </div>
+                @components.SingleDomofonCard(components.SingleDomofonCardProps{
+                    ID: 1,
+                    MAC: "00:1A:2B:3C:4D:5E",
+                    DomofonStatus: "ON",
+                    DoorStatus: "Opened",
+                    Adress: "г.Уфа, ул.40 лет Октября, кв.2",
+                    NumberOfApartments: 20,
+                    CreatedAt: time.Now(), 
+                })
+                <hr>
+                @components.SingleDomofonCard(components.SingleDomofonCardProps{
+                    ID: 2,
+                    MAC: "00:1A:2B:3C:4D:5E",
+                    DomofonStatus: "OFF",
+                    DoorStatus: "Closed",
+                    Adress: "г.Уфа, ул.8 Марта, кв.2",
+                    NumberOfApartments: 60,
+                    CreatedAt: time.Now(), 
+                })
+                <hr>
+                <div class="active-domofons--wrapper">
+                    <div>
+                        <span>Активные домофоны</span>
+                    </div>
+                </div>
+                <hr>
+                <div class="notActive-domofons-wrapper">
+                    <div>
+                        <span>Неактивные домофоны</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    }
+}
+
+templ HomePageStyle() {
+    <style>
+        .active-domofons--wrapper{
+            display: flex;
+            color: white;  
+            font-size: 36px;
+            align-items: center;
+            justify-content: center;
+        }
+        .all-domofons--wrapper{
+            display: flex;
+            color: white;  
+            font-size: 36px;
+            align-items: center;
+            justify-content: center;
+        }
+        .notActive-domofons-wrapper{
+            display: flex;
+            color: white;  
+            font-size: 36px;
+            align-items: center;
+            justify-content: center;
+        }
+        .title-text{
+            color: white;
+            font-size: 36px;
+        }
+        .domofons-wrapper{
+            margin-top: 15px;
+        }
+        .page-wrapper{
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            width:1320px;
+            margin:0px auto
+        }
+    </style>
+}

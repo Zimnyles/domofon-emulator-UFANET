@@ -1,0 +1,30 @@
+package layout
+
+type LayoutProps struct{
+    Title string
+    MetaDescription string
+}
+
+templ Layout(props LayoutProps) {
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{props.Title}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i"
+            rel="stylesheet">
+        <link rel="stylesheet" href="/client/web/public/styles.css">
+        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+        <script src="https://unpkg.com/htmx-ext-response-targets@2.0.2"></script>
+        <meta name="description" content={props.MetaDescription}>
+        <meta property="og:title" coontent={props.Title} />
+        <meta property="og:description" coontent={props.MetaDescription} />
+    </head>  
+    <body style="background-color: #181818;"> 
+        { children... }
+    </body> 
+    </html>
+}

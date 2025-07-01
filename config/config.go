@@ -18,11 +18,23 @@ type LogConfig struct {
 	Format string
 }
 
+type MQTTConfig struct{
+	Port int
+	Broker string
+}
+
 func Init() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("no .env file")
 	}
 	log.Println(".env file loaded")
+}
+
+func NewMQTTConfig() *MQTTConfig{
+	return &MQTTConfig{
+		Port: getInt("MQTT_PORT", 1883),
+		Broker: getString("MQTT_URL", "tcp://127.0.0.1:1883"),
+	}
 }
 
 func NewLogConfig() *LogConfig {
