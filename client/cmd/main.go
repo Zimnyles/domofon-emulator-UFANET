@@ -4,6 +4,8 @@ import (
 	"domofonEmulator/client/internal/home"
 	"domofonEmulator/config"
 	"domofonEmulator/pkg/logger"
+	"domofonEmulator/pkg/mqtt"
+	// "time"
 
 	"github.com/gofiber/contrib/fiberzerolog"
 	"github.com/gofiber/fiber/v2"
@@ -23,13 +25,21 @@ func main() {
 	clientApp.Static("/client/web/public", "./client/web/public")
 	clientApp.Static("/client/web/static", "./client/web/static")
 
+	mqqtConfig := config.NewMQTTConfig()
+	mqqtClient := mqtt.Connect(mqqtConfig.Broker, logger)
+	
+
 	//middlewares
 	clientApp.Use(fiberzerolog.New(fiberzerolog.Config{
 		Logger: logger,
 	}))
 	clientApp.Use(recover.New())
 
-	home.NewHandler(clientApp, logger)
+	//Services
+	homeService := home.NewHomeService(logger, mqqtClient)
+
+	//Hadlers
+	home.NewHandler(clientApp, logger, mqqtClient, homeService)
 
 	clientApp.Listen(":3030")
 }

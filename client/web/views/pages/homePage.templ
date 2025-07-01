@@ -16,40 +16,41 @@ templ HomePage() {
             <div class="domofons-wrapper">
                 <div class="all-domofons--wrapper">
                     <div>
-                        <span>Все домофоны</span>
+                        <span>Ваши домофоны</span>
                     </div>
                 </div>
                 @components.SingleDomofonCard(components.SingleDomofonCardProps{
                     ID: 1,
                     MAC: "00:1A:2B:3C:4D:5E",
-                    DomofonStatus: "ON",
-                    DoorStatus: "Opened",
+                    DomofonStatus: true,
+                    DoorStatus: true,
                     Adress: "г.Уфа, ул.40 лет Октября, кв.2",
                     NumberOfApartments: 20,
                     CreatedAt: time.Now(), 
+                    IsCalling: true,
                 })
                 <hr>
                 @components.SingleDomofonCard(components.SingleDomofonCardProps{
                     ID: 2,
                     MAC: "00:1A:2B:3C:4D:5E",
-                    DomofonStatus: "OFF",
-                    DoorStatus: "Closed",
+                    DomofonStatus: false,
+                    DoorStatus: false,
                     Adress: "г.Уфа, ул.8 Марта, кв.2",
                     NumberOfApartments: 60,
                     CreatedAt: time.Now(), 
+                    IsCalling: false,
                 })
                 <hr>
-                <div class="active-domofons--wrapper">
-                    <div>
-                        <span>Активные домофоны</span>
-                    </div>
-                </div>
-                <hr>
-                <div class="notActive-domofons-wrapper">
-                    <div>
-                        <span>Неактивные домофоны</span>
-                    </div>
-                </div>
+                @components.SingleDomofonCard(components.SingleDomofonCardProps{
+                    ID: 3,
+                    MAC: "00:1A:2B:3C:4D:5E",
+                    DomofonStatus: true,
+                    DoorStatus: false,
+                    Adress: "г.Уфа, ул.8 Марта, кв.2",
+                    NumberOfApartments: 60,
+                    CreatedAt: time.Now(),
+                    IsCalling: false,
+                })
             </div>
         </div>
     </main>
@@ -60,27 +61,24 @@ templ HomePageStyle() {
     <style>
         .active-domofons--wrapper{
             display: flex;
-            color: white;  
             font-size: 36px;
             align-items: center;
             justify-content: center;
         }
         .all-domofons--wrapper{
             display: flex;
-            color: white;  
             font-size: 36px;
             align-items: center;
             justify-content: center;
+            margin-bottom: 15px;
         }
         .notActive-domofons-wrapper{
-            display: flex;
-            color: white;  
+            display: flex; 
             font-size: 36px;
             align-items: center;
             justify-content: center;
         }
         .title-text{
-            color: white;
             font-size: 36px;
         }
         .domofons-wrapper{
