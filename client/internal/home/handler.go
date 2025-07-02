@@ -4,7 +4,6 @@ import (
 	"domofonEmulator/client/web/views/components"
 	"domofonEmulator/client/web/views/pages"
 	"domofonEmulator/pkg/tadapter"
-	"net/http"
 	"strconv"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -16,10 +15,14 @@ type HomeHandler struct {
 	router     fiber.Router
 	logger     *zerolog.Logger
 	mqqtClient mqtt.Client
-	service    *HomeService
+	service    IHomeService
 }
 
-func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtClient mqtt.Client, service *HomeService) {
+type IHomeService interface {
+	NewIntercom(mac string, adress string, numofapartments int, topic string) error
+}
+
+func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtClient mqtt.Client, service IHomeService) {
 	h := &HomeHandler{
 		router:     router,
 		logger:     logger,
@@ -58,7 +61,7 @@ func (h *HomeHandler) apiCreateIntercom(c *fiber.Ctx) error {
 	if err != nil {
 		h.logger.Fatal().Err(err).Msg("Failed to create new intercom")
 		component := components.NewIntercomResponse("Не удалось отправить запрос на сервер")
-		return tadapter.Render(c, component, http.StatusOK)
+		return tadapter.Render(c, component, fiber.StatusOK)
 	} else {
 		h.logger.Info().
 			Str("mac", mac).
@@ -68,5 +71,5 @@ func (h *HomeHandler) apiCreateIntercom(c *fiber.Ctx) error {
 			Msg("New domofon registered in system via MQTT")
 	}
 	component := components.NewIntercomResponse("Запрос отправлен на сервер")
-	return tadapter.Render(c, component, http.StatusOK)
+	return tadapter.Render(c, component, fiber.StatusOK)
 }

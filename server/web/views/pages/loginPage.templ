@@ -1,0 +1,180 @@
+package pages
+
+import "domofonEmulator/server/web/views/layout"
+
+
+templ LoginPage() {
+    @layout.Layout(layout.LayoutProps{
+    Title: "DomofonPanel",
+    MetaDescription: "DomofonPanel",
+    }){
+    <main>
+        @LoginPageStyle()
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <h1>Вход в систему</h1>
+                    <img src="/server/web/static/icons/un-logo.png" width="341px" height="173px" alt="doorinactive ico" />
+                </div>
+                <div id="notification-area"></div>
+                <form  hx-post="/api/login" 
+                        hx-target="#notification-area"
+                        hx-swap="innerHTML"
+                        hx-trigger="submit" 
+                        class="login-form"
+                        enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="username">Логин</label>
+                        <input type="text" id="username" name="login" required placeholder="Введите ваш логин">
+                    </div>
+        
+                    <div class="form-group">
+                        <label for="password">Пароль</label>
+                        <input type="password" id="password" name="password" required placeholder="••••••••">
+                    </div>
+        
+                    <div class="form-actions">
+                        <button type="submit" class="login-button">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                            Войти
+                        </button>
+                    </div>
+                </form>
+                
+        
+                <div class="login-footer">
+                    <a href="/register" class="link">Регистрация</a>
+                </div>
+            </div>
+        </div>
+    </main>
+    }
+}
+
+templ LoginPageStyle() {
+    <style>
+    
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+    
+        body {
+            background-color: var(--light-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+    
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+        }
+    
+        .login-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            transition: transform 0.3s ease;
+        }
+    
+        .login-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+    
+        .login-header {
+            text-align: center;
+        }
+    
+        .login-header h1 {
+            color: var(--text-color);
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+    
+        .login-header svg {
+            color: var(--primary-color);
+        }
+    
+        .form-group {
+            margin-bottom: 20px;
+        }
+    
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+    
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+    
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+    
+        .login-button {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.3s;
+        }
+    
+        .login-button:hover {
+            background-color: var(--primary-hover);
+        }
+    
+        .login-footer {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+    
+        .link {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+    
+        .link:hover {
+            text-decoration: underline;
+        }
+    
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 20px;
+            }
+    
+            .login-header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+}
