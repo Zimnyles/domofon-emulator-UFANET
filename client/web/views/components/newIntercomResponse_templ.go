@@ -75,7 +75,7 @@ func NewIntercomResponseStyle() templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<style>\r\n        .response-newintercom{\r\n            margin-top: 15px;\r\n            background-color: rgb(59, 59, 59);\r\n            color: white;\r\n            padding: 10px 15px;\r\n            border: none;\r\n            border-radius: 4px;\r\n            cursor: pointer;\r\n            font-size: 16px;\r\n        }\r\n\r\n        .htmx-swapping .response-newintercom{\r\n            opacity: 0;\r\n            transition: opacity 0.5s ease-out;\r\n        }\r\n    </style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<style>\r\n        .response-newintercom{\r\n            margin-top: 15px;\r\n            background-color: rgb(59, 59, 59);\r\n            color: white;\r\n            padding: 10px 15px;\r\n            border: none;\r\n            border-radius: 6px;\r\n            cursor: pointer;\r\n            font-size: 16px;\r\n        }\r\n\r\n        .htmx-swapping .response-newintercom{\r\n            opacity: 0;\r\n            transition: opacity 0.5s ease-out;\r\n        }\r\n    </style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

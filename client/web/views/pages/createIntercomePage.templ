@@ -3,86 +3,161 @@ package pages
 import "domofonEmulator/client/web/views/layout"
 
 templ CreateIntercomePage() {
-    @layout.Layout(layout.LayoutProps{
-    Title: "DomofonPanel",
-    MetaDescription: "DomofonPanel",
-    }){
-        <main>
-            @CreateIntercomePageStyle()
-            <div class="title-text">Добавление нового домофона</div>
-            <form hx-encoding="multipart/form-data" hx-post="/api/createIntercom" enctype="multipart/form-data"
-             hx-target="#post-result" hx-target-error="#post-result" hx-trigger="submit" hx-swap="innerHTML swap:1s" hx-on::after-request="if(event.detail.successful) this.reset()">
+@layout.Layout(layout.LayoutProps{
+Title: "DomofonPanel - Добавление домофона",
+MetaDescription: "Добавление нового домофона в систему",
+}){
+<main>
+    @CreateIntercomePageStyle()
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="header-with-back">
+                    <a href="/" class="back-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </a>
+                    <h1>Добавление нового домофона</h1>
+                </div>
+                <img src="/client/web/static/icons/un-logo.png" width="341px" height="173px" alt="doorinactive ico" />
+            </div>
+
+            <form hx-encoding="multipart/form-data" hx-post="/api/createIntercom" hx-target="#notification-area"
+                hx-target-error="#notification-area" hx-trigger="submit" hx-swap="innerHTML" class="login-form"
+                enctype="multipart/form-data" hx-on::after-request="if(event.detail.successful) this.reset()">
+
                 <div class="form-group">
                     <label for="mac">MAC-адрес:</label>
                     <div class="mac-group">
                         <input type="text" id="mac" name="mac" placeholder="XX:XX:XX:XX:XX:XX" required>
-                        <button type="button" onclick="generateMAC()">Сгенерировать</button>
+                        <button type="button" class="secondary-button" onclick="generateMAC()">Сгенерировать</button>
                     </div>
                 </div>
-            
+
                 <div class="form-group">
                     <label for="address">Адрес установки:</label>
                     <input type="text" id="address" name="address" required>
                 </div>
-            
+
                 <div class="form-group">
                     <label for="apartments">Количество квартир:</label>
                     <input type="number" id="apartments" name="apartments" min="1" required>
                 </div>
-            
-                <button type="submit">Создать домофон</button>
+                <div class="form-actions">
+                    <button type="submit" class="login-button">
+                        Создать домофон
+                    </button>
+                </div>
             </form>
-            <div id="post-result"></div>
-        </main>
-
-
-    }
+            <div id="notification-area"></div>
+        </div>
+    </div>
+</main>
+}
 }
 
 templ CreateIntercomePageStyle() {
 <style>
-    body {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
 
+    body {
+        background-color: var(--light-gray);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        transition: transform 0.3s ease;
+    }
+
+    .login-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .header-with-back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        position: relative;
+        padding-left: 40px; 
+    }
+
+    .back-button {
+        color: #4caf50;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s;
+        position: absolute;
+        left: 0;
+        width: 24px;
+        height: 24px;
+    }
+
+     .back-button:hover {
+        transform: translateX(-2px);
+        color: #3e8e41;
+    }
+
+    .login-header h1 {
+        color: var(--text-color);
+        font-size: 24px;
+        text-align: center;
+        width: 100%; 
     }
 
     .form-group {
-        margin-bottom: 15px;
+        margin-bottom: 20px;
     }
 
-    label {
+    .form-group label {
         display: block;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
+        color: var(--text-color);
+        font-weight: 500;
     }
 
-    .title-text{
-        font-size: 36px;
-        margin-bottom: 15px;
-    }
-
-    input[type="text"],
-    input[type="number"] {
+    .form-group input {
         width: 100%;
-        padding: 8px;
+        padding: 12px 15px;
         border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-    }
-
-    button {
-        background-color: rgb(59, 59, 59);
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
+        border-radius: 6px;
         font-size: 16px;
+        transition: border 0.3s;
     }
 
-    button:hover {
-        background-color: rgb(68, 68, 68);
+    .form-group input:focus {
+        border-color: white;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
     }
 
     .mac-group {
@@ -94,8 +169,60 @@ templ CreateIntercomePageStyle() {
         flex: 1;
     }
 
-    .mac-group button {
-        width: auto;
+    .secondary-button {
+        background-color: #6c757d;
+        color: white;
+        padding: 12px 15px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        white-space: nowrap;
+    }
+
+    .secondary-button:hover {
+        background-color: #5a6268;
+    }
+
+    .login-button {
+        width: 100%;
+        background-color: #4caf50;
+        color: white;
+        padding: 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .login-button:hover {
+        background-color: #3e8e41;
+    }
+
+    .form-actions {
+        margin-top: 25px;
+    }
+
+    @media (max-width: 480px) {
+        .login-card {
+            padding: 20px;
+        }
+
+        .login-header h1 {
+            font-size: 20px;
+        }
+
+        .mac-group {
+            flex-direction: column;
+        }
+
+        .secondary-button {
+            width: 100%;
+        }
     }
 </style>
 <script>

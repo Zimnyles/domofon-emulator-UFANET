@@ -1,10 +1,13 @@
 package main
 
 import (
+	"domofonEmulator/client/internal/api"
 	"domofonEmulator/client/internal/home"
+	mqttclient "domofonEmulator/client/internal/mqttClient"
 	"domofonEmulator/config"
+	"domofonEmulator/pkg/database"
 	"domofonEmulator/pkg/logger"
-	"domofonEmulator/pkg/mqtt"
+
 	// "time"
 
 	"github.com/gofiber/contrib/fiberzerolog"
@@ -20,14 +23,23 @@ func main() {
 	loggerConfig := config.NewLogConfig()
 	logger := logger.NewLogger(loggerConfig)
 
+	//database
+	databaseConfig := config.NewDBConfig()
+	databasePool := database.CreateDataBasePool(databaseConfig, logger)
+	defer databasePool.Close()
+
 	//app init
 	clientApp := fiber.New()
 	clientApp.Static("/client/web/public", "./client/web/public")
 	clientApp.Static("/client/web/static", "./client/web/static")
 
+	//mqtt
 	mqqtConfig := config.NewMQTTConfig()
-	mqqtClient := mqtt.Connect(mqqtConfig.Broker, logger)
-	
+	mqqtClient, err := mqttclient.Connect(*mqqtConfig, logger)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Client cannot connect to mqqtt")
+	}
+	defer mqqtClient.Disconnect()
 
 	//middlewares
 	clientApp.Use(fiberzerolog.New(fiberzerolog.Config{
@@ -35,11 +47,18 @@ func main() {
 	}))
 	clientApp.Use(recover.New())
 
+	//Repositories
+
 	//Services
-	homeService := home.NewHomeService(logger, mqqtClient)
+	intercomService := home.NewIntercomService(logger, *mqqtClient, *mqqtConfig)
+	apiService := api.NewAPIService(logger, *mqqtClient, *mqqtConfig)
 
 	//Hadlers
-	home.NewHandler(clientApp, logger, mqqtClient, homeService)
+	home.NewHandler(clientApp, logger, *mqqtClient, intercomService)
+	api.NewHandler(clientApp, logger, *mqqtClient, apiService)
+
+	//Intercoms statuses sending
+	// go intercomService.RunIntercomStatusSend()
 
 	clientApp.Listen(":3030")
 }

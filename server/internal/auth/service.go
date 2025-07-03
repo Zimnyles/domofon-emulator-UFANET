@@ -1,10 +1,14 @@
 package auth
 
 import (
+	"domofonEmulator/pkg/validator"
 	"domofonEmulator/server/models"
 	"os"
+	"regexp"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/gobuffalo/validate"
+	"github.com/gobuffalo/validate/validators"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -54,4 +58,56 @@ func (s *AuthService) LoginUser(loginForm models.LoginForm) (bool, string) {
 
 	return true, "success"
 
+}
+
+func (s *AuthService) RegisterUser(registerForm models.RegistrationForm) (bool, string) {
+	envSecretKey := s.GetRegistrationKey()
+	if envSecretKey != registerForm.SecretCode {
+		return false, "Неверный код приглашение, обратитесь к вашему руководителю"
+	}
+	//login validation
+	IsLoginExists, _ := s.repository.IsLoginExists(registerForm.Login)
+	if IsLoginExists {
+		return false, "Пользователя с таким логином уже существует"
+	}
+	if len(registerForm.Login) > 13 {
+		return false, "Длина логина не может превышать 13 символов"
+	}
+	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, registerForm.Login)
+	if !matched {
+		return false, "Логин может содержать только буквы, цифры и подчеркивания"
+	}
+	//email validation
+	IsEmailExists, _ := s.repository.IsEmailExists(registerForm.Email)
+	if IsEmailExists {
+		return false, "Пользователь с такой почтой уже существует"
+	}
+
+	//password validation
+	if len(registerForm.Password) < 6 {
+		return false, "Длина пароля не может быть меньше 6 символов"
+	}
+
+	//overall validation
+	errors := validate.Validate(
+		&validators.EmailIsPresent{Name: "Email", Field: registerForm.Email, Message: "Email не задан или задан неверно"},
+		&validators.StringIsPresent{Name: "Password", Field: registerForm.Password, Message: "Пароль не задан или задан неверно"},
+		&validators.StringIsPresent{Name: "Login", Field: registerForm.Login, Message: "Логин не задан или задан неверно"},
+	)
+	if len(errors.Error()) > 0 {
+		return false, validator.FormatErrors(errors)
+	}
+
+	createUserForm := models.CreateUserCredential{
+		Login:    registerForm.Login,
+		Email:    registerForm.Email,
+		Password: registerForm.Password,
+	}
+
+	success, err := s.repository.AddUser(createUserForm, s.logger)
+	if err != nil {
+		s.logger.Fatal().Err(err).Msg("Failed to create new account")
+	}
+
+	return success, ""
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -18,9 +19,11 @@ type LogConfig struct {
 	Format string
 }
 
-type MQTTConfig struct{
-	Port int
-	Broker string
+type MQTTConfig struct {
+	Port               int
+	Broker             string
+	StatusSendInterval time.Duration
+	QOSLevel           int
 }
 
 func Init() {
@@ -30,10 +33,12 @@ func Init() {
 	log.Println(".env file loaded")
 }
 
-func NewMQTTConfig() *MQTTConfig{
+func NewMQTTConfig() *MQTTConfig {
 	return &MQTTConfig{
-		Port: getInt("MQTT_PORT", 1883),
-		Broker: getString("MQTT_URL", "tcp://127.0.0.1:1883"),
+		Port:               getInt("MQTT_PORT", 1883),
+		Broker:             getString("MQTT_URL", "tcp://127.0.0.1:1883"),
+		StatusSendInterval: getTimeDuration("STATUS_SEND_INTERVAL", 30),
+		QOSLevel:           getInt("QOS_LEVEL", 1),
 	}
 }
 
@@ -46,10 +51,10 @@ func NewLogConfig() *LogConfig {
 
 func NewDBConfig() *DataBaseConfig {
 	databaseURL := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-		os.Getenv("DB_HOST"),    
-		os.Getenv("DB_USER"),    
-		os.Getenv("DB_PASSWORD"), 
-		os.Getenv("DB_NAME"),     
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_NAME"),
 		os.Getenv("DB_PORT"))
 	return &DataBaseConfig{
 		Url: databaseURL,
@@ -74,4 +79,20 @@ func getInt(key string, defValue int) int {
 		return defValue
 	}
 	return i
+}
+
+func getTimeDuration(key string, defValue int) time.Duration {
+	value := os.Getenv(key)
+	if value == "" {
+		return time.Duration(defValue) * time.Second
+	}
+	duration, err := time.ParseDuration(value)
+	if err == nil {
+		return duration
+	}
+	i, err := strconv.Atoi(value)
+	if err != nil {
+		return time.Duration(defValue) * time.Second
+	}
+	return time.Duration(i) * time.Second
 }
