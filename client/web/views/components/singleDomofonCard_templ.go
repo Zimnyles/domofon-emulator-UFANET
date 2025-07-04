@@ -10,20 +10,9 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/rvflash/elapsed"
 import "strconv"
-import "time"
+import "domofonEmulator/client/models"
 
-type SingleDomofonCardProps struct {
-	ID                 int
-	MAC                string
-	DomofonStatus      bool
-	DoorStatus         bool
-	Adress             string
-	NumberOfApartments int
-	IsCalling          bool
-	CreatedAt          time.Time
-}
-
-func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
+func SingleDomofonCard(props models.Intercom) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -56,7 +45,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 			doorStatusRu = "открыта"
 		}
 		intercomeStatusRu := ""
-		if props.DomofonStatus == false {
+		if props.IntercomStatus == false {
 			intercomeStatusRu = "Выключен"
 		} else {
 			intercomeStatusRu = "Включен"
@@ -66,8 +55,8 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 = []any{
-			templ.KV("domofon-card active", props.DomofonStatus == true),
-			templ.KV("domofon-card inactive", props.DomofonStatus != true)}
+			templ.KV("domofon-card active", props.IntercomStatus == true),
+			templ.KV("domofon-card inactive", props.IntercomStatus != true)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -92,7 +81,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(props.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 38, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 28, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -127,7 +116,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(intercomeStatusRu)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 40, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 30, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -176,7 +165,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(doorStatusRu)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 49, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 39, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -189,7 +178,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(props.MAC)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 58, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 48, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -200,9 +189,9 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 string
-		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(truncateText(props.Adress, 50))
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(truncateText(props.Address, 50))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 62, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 52, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -215,7 +204,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(props.NumberOfApartments)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 68, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 58, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -228,7 +217,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(date)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 71, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 61, Col: 30}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -249,7 +238,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(props.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 79, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 69, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -262,7 +251,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs("apartment_" + strconv.Itoa(props.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 81, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 71, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -275,7 +264,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs("apartment_" + strconv.Itoa(props.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 82, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 72, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
@@ -289,7 +278,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(
 			strconv.Itoa(props.NumberOfApartments))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 83, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 73, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -302,7 +291,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(props.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 95, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 85, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -315,7 +304,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs("door_apartment_" + strconv.Itoa(props.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 97, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 87, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -328,7 +317,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs("door_apartment_" + strconv.Itoa(props.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 98, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 88, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -342,7 +331,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(
 			strconv.Itoa(props.NumberOfApartments))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 99, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 89, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
@@ -355,7 +344,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(props.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 111, Col: 93}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 101, Col: 93}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -365,8 +354,8 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var24 = []any{templ.KV("control-button power-buttonON", props.DomofonStatus == true),
-			templ.KV("control-button power-buttonOFF", props.DomofonStatus != true)}
+		var templ_7745c5c3_Var24 = []any{templ.KV("control-button power-buttonON", props.IntercomStatus == true),
+			templ.KV("control-button power-buttonOFF", props.IntercomStatus != true)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var24...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -388,7 +377,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if props.DomofonStatus == true {
+		if props.IntercomStatus == true {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<span>Выключить</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -406,7 +395,7 @@ func SingleDomofonCard(props SingleDomofonCardProps) templ.Component {
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(props.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 127, Col: 93}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/components/singleDomofonCard.templ`, Line: 117, Col: 93}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {

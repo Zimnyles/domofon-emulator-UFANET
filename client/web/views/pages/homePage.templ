@@ -15,22 +15,23 @@ MetaDescription: "Подключение или регистрация ново�
                 <h1>Подключение домофона</h1>
                 <img src="/client/web/static/icons/un-logo.png" width="341px" height="173px" alt="ufanetlogo" />
             </div>
-            <div id="notification-area"></div>
+            
 
             <div class="choice-options">
                 <div class="option-card">
                     <h2>Подключить существующий</h2>
                     <p>Уже есть зарегистрированный домофон? Введите его идентификатор для подключения.</p>
-                    <form hx-post="/api/connect-domofon" hx-target="#notification-area" hx-swap="innerHTML"
+                    <form hx-post="/api/connect/" hx-target="#notification-area" hx-swap="innerHTML"
                         hx-trigger="submit" class="choice-form">
                         <div class="form-group">
-                            <label for="domofon-id">ID домофона</label>
-                            <input type="text" id="domofon-id" name="domofon_id" required
+                            <label for="intercom-id">ID домофона</label>
+                            <input type="text" id="intercom-id" name="intercomID" required
                                 placeholder="Введите ID домофона">
                         </div>
                         <button type="submit" class="choice-button">
                             Подключить
                         </button>
+                        <div id="notification-area"></div>
                     </form>
                 </div>
 

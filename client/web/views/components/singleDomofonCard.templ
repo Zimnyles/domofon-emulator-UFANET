@@ -2,20 +2,10 @@ package components
 
 import "github.com/rvflash/elapsed"
 import "strconv"
-import "time"
+import "domofonEmulator/client/models"
 
-type SingleDomofonCardProps struct{
-    ID int
-    MAC string
-    DomofonStatus bool
-    DoorStatus bool
-    Adress string
-    NumberOfApartments int
-    IsCalling bool
-    CreatedAt time.Time
-}
 
-templ SingleDomofonCard(props SingleDomofonCardProps) {
+templ SingleDomofonCard(props models.Intercom) {
     @SingleDomofonCardStyle()
     {{ date := elapsed.LocalTime(props.CreatedAt, "ru") }}
     {{ doorStatusRu := ""
@@ -25,15 +15,15 @@ templ SingleDomofonCard(props SingleDomofonCardProps) {
         doorStatusRu = "открыта"
        } }}
     {{ intercomeStatusRu := ""
-    if props.DomofonStatus == false {
+    if props.IntercomStatus == false {
     intercomeStatusRu = "Выключен"
     } else {
     intercomeStatusRu = "Включен"
     } }}
         <div class="domofon-card-container">
             <div class={
-            templ.KV("domofon-card active", props.DomofonStatus == true ),
-            templ.KV("domofon-card inactive", props.DomofonStatus != true)} >
+            templ.KV("domofon-card active", props.IntercomStatus == true ),
+            templ.KV("domofon-card inactive", props.IntercomStatus!= true)} >
                 <div class="card-header">
                     <span class="domofon-id">{ props.ID }</span>
                     <span class={"status-badge"}>
@@ -59,7 +49,7 @@ templ SingleDomofonCard(props SingleDomofonCardProps) {
                         </div>
                         <div class="address">
                             <span class="label">Адрес:</span>
-                            <span class="value">{ truncateText(props.Adress, 50) }</span>
+                            <span class="value">{ truncateText(props.Address, 50) }</span>
                         </div>
                 </div>
             
@@ -109,13 +99,13 @@ templ SingleDomofonCard(props SingleDomofonCardProps) {
                 <div class="power-controls">
                     <form action="/domofon/toggle" method="post" class="control-form">
                         <input type="hidden" name="domofon_id" value={ strconv.Itoa(props.ID) }>
-                        <button type="submit" class={ templ.KV("control-button power-buttonON", props.DomofonStatus==true ),
-                            templ.KV("control-button power-buttonOFF", props.DomofonStatus !=true)}>
+                        <button type="submit" class={ templ.KV("control-button power-buttonON", props.IntercomStatus==true ),
+                            templ.KV("control-button power-buttonOFF", props.IntercomStatus !=true)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
                                 <line x1="12" y1="2" x2="12" y2="12" />
                             </svg>
-                            if props.DomofonStatus == true {
+                            if props.IntercomStatus == true {
                             <span>Выключить</span>
                             } else {
                             <span>Включить⁣⁣⁣ ⁣⁣⁣⁣</span>

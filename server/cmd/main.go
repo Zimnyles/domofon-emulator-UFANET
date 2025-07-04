@@ -39,13 +39,13 @@ func main() {
 	serverApp.Static("/server/web/static", "./server/web/static")
 
 	//mqtt
-	mqqtConfig := config.NewMQTTConfig()
-	mqqtServerRepository := mqttserver.NewMqttRepository(databasePool, logger)
-	mqqtServer, err := mqttserver.Connect(*mqqtConfig, logger, *mqqtServerRepository)
+	mqttConfig := config.NewMQTTConfig()
+	mqttServerRepository := mqttserver.NewMqttRepository(databasePool, logger)
+	mqttServer, err := mqttserver.Connect(*mqttConfig, logger, *mqttServerRepository)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Client cannot connect to mqqtt")
 	}
-	defer mqqtServer.Disconnect()
+	defer mqttServer.Disconnect()
 
 	//middlewares
 	serverApp.Use(fiberzerolog.New(fiberzerolog.Config{
@@ -59,14 +59,15 @@ func main() {
 	authRepository := auth.NewAuthRepository(databasePool, logger)
 
 	//Services
-	homeService := home.NewHomeService(logger, *mqqtServer)
-	authService := auth.NewAuthService(logger, *mqqtServer, authRepository)
+	homeService := home.NewHomeService(logger, *mqttServer)
+	authService := auth.NewAuthService(logger, *mqttServer, authRepository)
 
 	//Hadlers
-	home.NewHandler(serverApp, logger, *mqqtServer, homeService, homeRepository, store)
-	auth.NewHandler(serverApp, logger, *mqqtServer, authService, authRepository, store)
+	home.NewHandler(serverApp, logger, *mqttServer, homeService, homeRepository, store)
+	auth.NewHandler(serverApp, logger, *mqttServer, authService, authRepository, store)
 
-	go mqqtServer.ListenForIntercomCreations(context.Background())
+	go mqttServer.ListenForIntercomCreations(context.Background())
+	go mqttServer.ListenForIntercomConnections(context.Background())
 
 	serverApp.Listen(":3031")
 }

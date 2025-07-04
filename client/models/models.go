@@ -12,10 +12,16 @@ type NewIntercomProperties struct {
 	NumberOfApartments int
 }
 
+type IntercomConnectResponse struct {
+	Success bool `json:"success"`
+	Message string `json:"message"`
+	Intercom
+}
+
 type Intercom struct {
 	ID                 int       `json:"id"`
 	MAC                string    `json:"mac_address"`
-	DomofonStatus      bool      `json:"domofon_status"`
+	IntercomStatus      bool      `json:"intercom_status"`
 	DoorStatus         bool      `json:"door_status"`
 	Address            string    `json:"address"`
 	NumberOfApartments int       `json:"number_of_apartments"`
@@ -32,8 +38,8 @@ type RegistrationRequest struct {
 }
 
 type RegistrationResponse struct {
-	Success   bool      `json:"success"`
-	Message   string    `json:"message"`
+	Success  bool      `json:"success"`
+	Message  string    `json:"message"`
 	Intercom *Intercom `json:"intercom,omitempty"`
 }
 
@@ -41,6 +47,7 @@ type CreateIntercomResponse struct {
 	Success bool
 	ID      int
 	IsNew   bool
+	Mac string
 	Message string
 }
 

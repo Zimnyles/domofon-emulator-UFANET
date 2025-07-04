@@ -1,0 +1,38 @@
+package pages
+
+import "domofonEmulator/client/web/views/components"
+import "domofonEmulator/client/models"
+import "domofonEmulator/client/web/views/layout"
+
+
+templ ControlInetcomPage(props models.Intercom) {
+    @layout.Layout(layout.LayoutProps{
+    Title: "DomofonPanel - Подключение домофона",
+    MetaDescription: "Подключение или регистрация нового домофона",
+    }){
+        <main>
+            @ControlInetcomPageStyle()
+            @components.SingleDomofonCard(props)
+        
+        </main>
+    }
+}
+
+templ ControlInetcomPageStyle() {
+    <style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background-color: var(--light-gray);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    </style>
+}

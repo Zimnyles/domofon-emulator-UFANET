@@ -15,9 +15,9 @@ type Client struct {
 	config config.MQTTConfig
 }
 
-func Connect(mqqtConfig config.MQTTConfig, logger *zerolog.Logger) (*Client, error) {
+func Connect(mqttConfig config.MQTTConfig, logger *zerolog.Logger) (*Client, error) {
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(mqqtConfig.Broker)
+	opts.AddBroker(mqttConfig.Broker)
 	opts.SetClientID("client")
 	opts.SetAutoReconnect(true)
 	opts.SetResumeSubs(true)

@@ -11,6 +11,7 @@ services:
       - ./postgres-data:/data/postgres
     ports:
       - "5432:5432"
+
   mqtt:
     image: eclipse-mosquitto:2
     ports:
@@ -18,6 +19,15 @@ services:
     volumes:
       - ./mosquitto.conf:/server/mqtt/config/mqtt.conf
     command: /usr/sbin/mosquitto -c /server/mqtt/config/mqtt.conf
+
+  redis:
+    image: redis:7.2
+    container_name: domofon-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
 
   server:
     image: golang:1.24.4
@@ -32,11 +42,14 @@ services:
       - DB_PASSWORD=my_pass
       - DB_NAME=domofon
       - MQTT_HOST=mqtt
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     ports:
       - "8080:8080"
     depends_on:
       - db
       - mqtt
+      - redis
     restart: unless-stopped
 
   client:
@@ -47,8 +60,9 @@ services:
     command: sh -c "go run ./client/cmd/main.go"
     environment:
       - MQTT_HOST=mqtt
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - mqtt
-    deploy:
-      replicas: 3
+      - redis
     restart: unless-stopped

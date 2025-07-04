@@ -26,6 +26,17 @@ type MQTTConfig struct {
 	QOSLevel           int
 }
 
+type RedisConfig struct {
+	Port        int           `yaml:"port"`
+	Url         string        `yaml:"url"`
+	Password    string        `yaml:"password"`
+	User        string        `yaml:"user"`
+	DB          int           `yaml:"db"`
+	MaxRetries  int           `yaml:"max_retries"`
+	DialTimeout time.Duration `yaml:"dial_timeout"`
+	Timeout     time.Duration `yaml:"timeout"`
+}
+
 func Init() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("no .env file")
@@ -39,6 +50,19 @@ func NewMQTTConfig() *MQTTConfig {
 		Broker:             getString("MQTT_URL", "tcp://127.0.0.1:1883"),
 		StatusSendInterval: getTimeDuration("STATUS_SEND_INTERVAL", 30),
 		QOSLevel:           getInt("QOS_LEVEL", 1),
+	}
+}
+
+func NewRedisConfig() *RedisConfig {
+	return &RedisConfig{
+		Port:        getInt("REDIS_PORT", 6379),
+		Url:         getString("REDIS_URL", "127.0.0.1"),
+		Password:    getString("REDIS_PASS", "my_pass"),
+		User:        getString("REDIS_USER", "user"),
+		DB:          getInt("REDIS_DATABASE", 0),
+		MaxRetries:  getInt("REDIS_MAXRET", 5),
+		DialTimeout: 10 * time.Second,
+		Timeout:     5 * time.Second,
 	}
 }
 

@@ -2,8 +2,10 @@ package main
 
 import (
 	"domofonEmulator/client/internal/api"
-	"domofonEmulator/client/internal/home"
+	intercom "domofonEmulator/client/internal/intercomHandler"
+	home "domofonEmulator/client/internal/mainHandler"
 	mqttclient "domofonEmulator/client/mqttClient"
+	"domofonEmulator/client/storage"
 	"domofonEmulator/config"
 	"domofonEmulator/pkg/database"
 	"domofonEmulator/pkg/logger"
@@ -33,13 +35,19 @@ func main() {
 	clientApp.Static("/client/web/public", "./client/web/public")
 	clientApp.Static("/client/web/static", "./client/web/static")
 
+	//redis config
+	redisConfig := config.NewRedisConfig()
+
+	//session
+	sessionStorage := storage.NewRedisStorage(*redisConfig)
+
 	//mqtt
-	mqqtConfig := config.NewMQTTConfig()
-	mqqtClient, err := mqttclient.Connect(*mqqtConfig, logger)
+	mqttConfig := config.NewMQTTConfig()
+	mqttClient, err := mqttclient.Connect(*mqttConfig, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Client cannot connect to mqqtt")
 	}
-	defer mqqtClient.Disconnect()
+	defer mqttClient.Disconnect()
 
 	//middlewares
 	clientApp.Use(fiberzerolog.New(fiberzerolog.Config{
@@ -50,12 +58,13 @@ func main() {
 	//Repositories
 
 	//Services
-	intercomService := home.NewIntercomService(logger, *mqqtClient, *mqqtConfig)
-	apiService := api.NewAPIService(logger, *mqqtClient, *mqqtConfig)
+	intercomService := intercom.NewIntercomService(logger, *mqttClient, *mqttConfig)
+	apiService := api.NewAPIService(logger, *mqttClient, *mqttConfig)
 
 	//Hadlers
-	home.NewHandler(clientApp, logger, *mqqtClient, intercomService)
-	api.NewHandler(clientApp, logger, *mqqtClient, apiService)
+	home.NewHandler(clientApp, logger, *mqttClient)
+	api.NewHandler(clientApp, logger, apiService, sessionStorage)
+	intercom.NewHandler(clientApp, logger, *mqttClient, intercomService, sessionStorage)
 
 	//Intercoms statuses sending
 	// go intercomService.RunIntercomStatusSend()

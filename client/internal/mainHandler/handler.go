@@ -13,18 +13,13 @@ type HomeHandler struct {
 	router     fiber.Router
 	logger     *zerolog.Logger
 	mqqtClient mqttclient.Client
-	service    IIntercomService
 }
 
-type IIntercomService interface {
-}
-
-func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtClient mqttclient.Client, service IIntercomService) {
+func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtClient mqttclient.Client) {
 	h := &HomeHandler{
 		router:     router,
 		logger:     logger,
 		mqqtClient: mqqtClient,
-		service:    service,
 	}
 
 	h.router.Get("/", h.home)
@@ -33,13 +28,11 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtClient mqttclie
 }
 
 func (h *HomeHandler) home(c *fiber.Ctx) error {
-
 	component := pages.HomePage()
 	return tadapter.Render(c, component, fiber.StatusOK)
 }
 
 func (h *HomeHandler) createIntercome(c *fiber.Ctx) error {
-
 	component := pages.CreateIntercomePage()
 	return tadapter.Render(c, component, fiber.StatusOK)
 }
