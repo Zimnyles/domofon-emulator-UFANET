@@ -2,8 +2,8 @@ package home
 
 import (
 	"domofonEmulator/pkg/middleware"
+	mqttserver "domofonEmulator/server/mqttServer"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/rs/zerolog"
@@ -12,7 +12,7 @@ import (
 type HomeHandler struct {
 	router     fiber.Router
 	logger     *zerolog.Logger
-	mqqtClient mqtt.Client
+	mqttServer mqttserver.Server
 	service    IHomeService
 	repository IHomeRepository
 	store      *session.Store
@@ -24,11 +24,11 @@ type IHomeRepository interface {
 type IHomeService interface {
 }
 
-func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtClient mqtt.Client, service IHomeService, repository IHomeRepository, store *session.Store) {
+func NewHandler(router fiber.Router, logger *zerolog.Logger, mqttServer mqttserver.Server, service IHomeService, repository IHomeRepository, store *session.Store) {
 	h := &HomeHandler{
 		router:     router,
 		logger:     logger,
-		mqqtClient: mqqtClient,
+		mqttServer: mqttServer,
 		service:    service,
 		repository: repository,
 		store:      store,

@@ -1,11 +1,12 @@
 package api
 
 import (
-	mqttclient "domofonEmulator/client/internal/mqttClient"
-	"domofonEmulator/client/models"
+	mqttclient "domofonEmulator/client/mqttClient"
 	"domofonEmulator/config"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -24,60 +25,94 @@ func NewAPIService(logger *zerolog.Logger, mqqtClient mqttclient.Client, mqttCon
 	}
 }
 
-func (s *APIService) NewIntercom(mac string, adress string, numofapartments int, topic string) error {
-	newIntercom := models.NewIntercomProperties{
-		MAC:                mac,
-		Address:            adress,
-		NumberOfApartments: numofapartments,
-	}
+func (s *APIService) CreateNewIntercomRequest(mac string, address string, apartments int) (bool, string) {
+	responseChan := make(chan struct {
+		success bool
+		id      int
+		isNew   bool
+		mac     string
+		message string
+	}, 1)
 
-	payload, err := json.Marshal(newIntercom)
+	responseTopic := fmt.Sprintf("intercom/fromserver/%s", mac)
+
+	err := s.mqqtClient.Subscribe(responseTopic, func(payload []byte) {
+		var response struct {
+			Success bool   `json:"success"`
+			ID      int    `json:"id"`
+			IsNew   bool   `json:"is_new"`
+			Mac     string `json:"mac"`
+			Message string `json:"message"`
+		}
+		if err := json.Unmarshal(payload, &response); err != nil {
+			s.logger.Error().Err(err).Str("payload", string(payload)).Msg("Failed to parse response")
+			select {
+			case responseChan <- struct {
+				success bool
+				id      int
+				isNew   bool
+				mac     string
+				message string
+			}{
+				success: false,
+				message: "Ошибка обработки ответа сервера",
+			}:
+			default:
+			}
+			return
+		}
+		select {
+		case responseChan <- struct {
+			success bool
+			id      int
+			isNew   bool
+			mac     string
+			message string
+		}{
+			success: response.Success,
+			id:      response.ID,
+			isNew:   response.IsNew,
+			mac:     response.Mac,
+			message: response.Message,
+		}:
+		default:
+		}
+	})
+
 	if err != nil {
-		return fmt.Errorf("failed to marshal domofon data: %w", err)
+		s.logger.Error().Err(err).Msg("Failed to subscribe to MQTT topic")
+		return false, "Ошибка отправки запроса. Обратитесь к системному администратору."
 	}
 
-	err = s.mqqtClient.Publish(topic, payload)
-
-	if err != nil {
-		return fmt.Errorf("publish error: %w", err)
+	request := map[string]interface{}{
+		"mac":        mac,
+		"address":    address,
+		"apartments": apartments,
 	}
 
-	return nil
+	payload, _ := json.Marshal(request)
+	if err := s.mqqtClient.Publish("intercom/fromclient/create", payload); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to send creation request")
+		return false, "Ошибка отправки запроса. Обратитесь к системному администратору."
+	}
+
+	s.logger.Info().
+		Str("mac", mac).
+		Str("address", address).
+		Int("apartments", apartments).
+		Msg("Sent intercom creation request")
+
+	select {
+	case response := <-responseChan:
+		if response.isNew && response.success {
+			return true, "Домофон успешно создан (ID: " + strconv.Itoa(response.id) + "). Используйте ID для подключния к устройству на главной странице."
+		}
+		if !response.isNew && response.success {
+			return true, "Домофон с таким MAC адресом уже существует (ID: " + strconv.Itoa(response.id) + "). Используйте ID для подключния к устройству на главной странице."
+		} else {
+			return false, "Произошла неизвестная ошибка. Обратитесь к системному администратору." + response.message
+		}
+	case <-time.After(10 * time.Second):
+		return false, "Превышено время ожидания ответа из-за ошибки на сервере. Обратитесь к системному администратору."
+	}
 }
-
-// func (s *APIService) Run(ctx context.Context) {
-// 	ticker := time.NewTicker(s.mqttConfig.StatusSendInterval)
-// 	defer ticker.Stop()
-// 	if err := s.publishStatuses(ctx); err != nil {
-// 		s.logger.Printf("Initial publish failed: %v", err)
-// 	}
-
-// 	for {
-// 		select {
-// 		case <-ticker.C:
-// 			if err := s.publishStatuses(ctx); err != nil {
-// 				s.logger.Printf("Publish failed: %v", err)
-// 			}
-// 		case <-ctx.Done():
-// 			s.logger.Println("Stopping doorphone service")
-// 			return
-// 		}
-// 	}
-// }
-
-// func (s *APIService) publishStatuses(ctx context.Context) error {
-// 	doorphones, err := s.repository.GetAllActiveIntercoms(ctx)
-// 	if err != nil {
-// 		s.logger.Info().Msg("Cannot get intercoms")
-// 	}
-
-// 	for _, d := range doorphones {
-// 		topic := fmt.Sprintf("doorphones/%s/status", d.MAC)
-// 		if err := s.mqqtClient.Publish(topic, d, 1); err != nil {
-// 			s.logger.Printf("Failed to publish for doorphone %d: %v", d.ID, err)
-// 			continue
-// 		}
-// 	}
-
-// 	return nil
-// }

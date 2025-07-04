@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"domofonEmulator/config"
 	"domofonEmulator/pkg/database"
 	"domofonEmulator/pkg/logger"
 	"domofonEmulator/pkg/middleware"
-	"domofonEmulator/pkg/mqtt"
 	"domofonEmulator/pkg/session"
 	"domofonEmulator/server/internal/auth"
 	"domofonEmulator/server/internal/home"
+	mqttserver "domofonEmulator/server/mqttServer"
 
 	"github.com/gofiber/contrib/fiberzerolog"
 	"github.com/gofiber/fiber/v2"
@@ -39,7 +40,12 @@ func main() {
 
 	//mqtt
 	mqqtConfig := config.NewMQTTConfig()
-	mqqtClient := mqtt.Connect(mqqtConfig.Broker, logger)
+	mqqtServerRepository := mqttserver.NewMqttRepository(databasePool, logger)
+	mqqtServer, err := mqttserver.Connect(*mqqtConfig, logger, *mqqtServerRepository)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Client cannot connect to mqqtt")
+	}
+	defer mqqtServer.Disconnect()
 
 	//middlewares
 	serverApp.Use(fiberzerolog.New(fiberzerolog.Config{
@@ -53,12 +59,14 @@ func main() {
 	authRepository := auth.NewAuthRepository(databasePool, logger)
 
 	//Services
-	homeService := home.NewHomeService(logger, mqqtClient)
-	authService := auth.NewAuthService(logger, mqqtClient, authRepository)
+	homeService := home.NewHomeService(logger, *mqqtServer)
+	authService := auth.NewAuthService(logger, *mqqtServer, authRepository)
 
 	//Hadlers
-	home.NewHandler(serverApp, logger, mqqtClient, homeService, homeRepository, store)
-	auth.NewHandler(serverApp, logger, mqqtClient, authService, authRepository, store)
+	home.NewHandler(serverApp, logger, *mqqtServer, homeService, homeRepository, store)
+	auth.NewHandler(serverApp, logger, *mqqtServer, authService, authRepository, store)
+
+	go mqqtServer.ListenForIntercomCreations(context.Background())
 
 	serverApp.Listen(":3031")
 }

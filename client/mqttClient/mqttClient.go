@@ -18,7 +18,9 @@ type Client struct {
 func Connect(mqqtConfig config.MQTTConfig, logger *zerolog.Logger) (*Client, error) {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(mqqtConfig.Broker)
-	opts.SetClientID("mqtt-golang")
+	opts.SetClientID("client")
+	opts.SetAutoReconnect(true)
+	opts.SetResumeSubs(true)
 	client := mqtt.NewClient(opts)
 	token := client.Connect()
 	for !token.WaitTimeout(3 * time.Second) {

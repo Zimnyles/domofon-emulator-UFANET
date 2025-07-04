@@ -1,18 +1,19 @@
 package home
 
 import (
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	mqttserver "domofonEmulator/server/mqttServer"
+
 	"github.com/rs/zerolog"
 )
 
 type HomeService struct {
 	logger     *zerolog.Logger
-	mqqtClient mqtt.Client
+	mqttServer mqttserver.Server
 }
 
-func NewHomeService(logger *zerolog.Logger, mqqtClient mqtt.Client) *HomeService {
+func NewHomeService(logger *zerolog.Logger, mqttServer mqttserver.Server) *HomeService {
 	return &HomeService{
 		logger:     logger,
-		mqqtClient: mqqtClient,
+		mqttServer: mqttServer,
 	}
 }

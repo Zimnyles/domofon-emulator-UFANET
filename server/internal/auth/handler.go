@@ -3,12 +3,12 @@ package auth
 import (
 	"domofonEmulator/pkg/tadapter"
 	"domofonEmulator/server/models"
+	mqttserver "domofonEmulator/server/mqttServer"
 	"domofonEmulator/server/web/views/components"
 	"domofonEmulator/server/web/views/pages"
 	"net/http"
 	"strings"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/rs/zerolog"
@@ -35,7 +35,7 @@ type IAuthService interface {
 	RegisterUser(registerForm models.RegistrationForm) (bool, string)
 }
 
-func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtClient mqtt.Client, service IAuthService, repository IAuthRepository, store *session.Store) {
+func NewHandler(router fiber.Router, logger *zerolog.Logger, mqttServer mqttserver.Server, service IAuthService, repository IAuthRepository, store *session.Store) {
 	h := &AuthHandler{
 		router:     router,
 		logger:     logger,

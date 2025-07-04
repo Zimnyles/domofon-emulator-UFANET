@@ -1,7 +1,7 @@
 package home
 
 import (
-	mqttclient "domofonEmulator/client/internal/mqttClient"
+	mqttclient "domofonEmulator/client/mqttClient"
 	"domofonEmulator/client/models"
 	"domofonEmulator/config"
 	"sync"

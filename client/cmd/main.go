@@ -3,7 +3,7 @@ package main
 import (
 	"domofonEmulator/client/internal/api"
 	"domofonEmulator/client/internal/home"
-	mqttclient "domofonEmulator/client/internal/mqttClient"
+	mqttclient "domofonEmulator/client/mqttClient"
 	"domofonEmulator/config"
 	"domofonEmulator/pkg/database"
 	"domofonEmulator/pkg/logger"

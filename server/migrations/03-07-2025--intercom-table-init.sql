@@ -1,7 +1,7 @@
-CREATE TABLE intercom (
+CREATE TABLE intercoms (
     id SERIAL PRIMARY KEY,
     mac_address VARCHAR(17) UNIQUE NOT NULL,
-    domofon_status BOOLEAN DEFAULT TRUE,
+    intercom_status BOOLEAN DEFAULT TRUE,
     door_status BOOLEAN DEFAULT FALSE,
     address TEXT NOT NULL,
     number_of_apartments INTEGER NOT NULL,

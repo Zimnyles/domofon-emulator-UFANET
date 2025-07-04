@@ -3,10 +3,10 @@ package auth
 import (
 	"domofonEmulator/pkg/validator"
 	"domofonEmulator/server/models"
+	mqttserver "domofonEmulator/server/mqttServer"
 	"os"
 	"regexp"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gobuffalo/validate"
 	"github.com/gobuffalo/validate/validators"
 	"github.com/rs/zerolog"
@@ -15,14 +15,14 @@ import (
 
 type AuthService struct {
 	logger     *zerolog.Logger
-	mqqtClient mqtt.Client
+	mqttServer mqttserver.Server
 	repository IAuthRepository
 }
 
-func NewAuthService(logger *zerolog.Logger, mqqtClient mqtt.Client, repository IAuthRepository) *AuthService {
+func NewAuthService(logger *zerolog.Logger, mqttServer mqttserver.Server, repository IAuthRepository) *AuthService {
 	return &AuthService{
 		logger:     logger,
-		mqqtClient: mqqtClient,
+		mqttServer: mqttServer,
 		repository: repository,
 	}
 }
