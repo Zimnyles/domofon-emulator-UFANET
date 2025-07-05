@@ -68,6 +68,7 @@ func main() {
 
 	go mqttServer.ListenForIntercomCreations(context.Background())
 	go mqttServer.ListenForIntercomConnections(context.Background())
+	go mqttServer.ListenForIntercomPowerOnOff(context.Background())
 
 	serverApp.Listen(":3031")
 }

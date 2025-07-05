@@ -23,6 +23,7 @@ type ApiHandler struct {
 type IApiService interface {
 	CreateNewIntercomRequest(mac string, address string, apartments int) (bool, string)
 	CreateNewIntercomConnectionRequest(id int) (bool, string, *models.Intercom)
+	PowerIntercomRequest(id int, action string) (bool, string, *models.Intercom)
 }
 
 func NewHandler(router fiber.Router, logger *zerolog.Logger, apiService IApiService, sessionStorage *storage.SessionStorage) {
@@ -33,8 +34,47 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, apiService IApiServ
 		sessionStorage: sessionStorage,
 	}
 	h.router.Post("/api/createIntercom", h.apiCreateIntercom)
+	h.router.Post("/api/powerIntercom", h.apiPowerIntercom)
 	h.router.Post("/api/connect", h.apiConnectToIntercom)
 
+}
+
+func (h *ApiHandler) apiPowerIntercom(c *fiber.Ctx) error {
+	action := c.FormValue("action")
+	if action != "on" && action != "off" {
+		status := "error"
+		msg := "Неизвестная ошибка. Обратитесь к системному администратору"
+		component := components.IntercomControlResponse(msg, status)
+		return tadapter.Render(c, component, fiber.StatusOK)
+	}
+
+	activeIntercomData, err := h.sessionStorage.GetActiveIntercomData(c)
+	if err != nil {
+		h.logger.Info().Err(err).Msg("Cannot get active intercom data")
+	} else {
+		h.logger.Info().Str("New intercom power off/onn request from client", action).Int("Intercom ID:", activeIntercomData.ID)
+	}
+
+	isSuccess, message, intercomData := h.apiService.PowerIntercomRequest(activeIntercomData.ID, action)
+
+	if !isSuccess {
+		h.logger.Error().Err(err).Msg("Failed to update session data")
+		msg := message
+		status := "error"
+		component := components.IntercomControlResponse(msg, status)
+		return tadapter.Render(c, component, fiber.StatusOK)
+	}
+
+	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("Failed to update session data")
+		msg := "Ошибка сохранения данных. Обратитесь к системному администратору"
+		status := "error"
+		component := components.IntercomControlResponse(msg, status)
+		return tadapter.Render(c, component, fiber.StatusOK)
+	}
+
+	return tadapter.Render(c, tadapter.RenderPowerIntercomResponse(message, intercomData), fiber.StatusOK)
 }
 
 func (h *ApiHandler) apiConnectToIntercom(c *fiber.Ctx) error {
@@ -43,7 +83,7 @@ func (h *ApiHandler) apiConnectToIntercom(c *fiber.Ctx) error {
 		component := components.ConnectIntercomResponse("ID не может превышать 99999!")
 		return tadapter.Render(c, component, fiber.StatusOK)
 	}
-	h.logger.Info().Int("new connection request to intercom with id:", intercomID)
+	h.logger.Info().Int("New connection request to intercom with id:", intercomID)
 
 	isSuccess, message, intercomData := h.apiService.CreateNewIntercomConnectionRequest(intercomID)
 

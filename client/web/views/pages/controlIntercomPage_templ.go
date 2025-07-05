@@ -11,6 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import "domofonEmulator/client/web/views/components"
 import "domofonEmulator/client/models"
 import "domofonEmulator/client/web/views/layout"
+import "strconv"
 
 func ControlInetcomPage(props models.Intercom) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -53,19 +54,37 @@ func ControlInetcomPage(props models.Intercom) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+			id := "domofon-card-" + strconv.Itoa(props.ID)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(id)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/pages/controlIntercomPage.templ`, Line: 17, Col: 16}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 			templ_7745c5c3_Err = components.SingleDomofonCard(props).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</main>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"notification-container\"><div id=\"notification-area\"></div></div></main>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
 		templ_7745c5c3_Err = layout.Layout(layout.LayoutProps{
-			Title:           "DomofonPanel - Подключение домофона",
-			MetaDescription: "Подключение или регистрация нового домофона",
+			Title:           "Панель домофона",
+			MetaDescription: "Панель домофона",
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -90,12 +109,12 @@ func ControlInetcomPageStyle() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var3 == nil {
-			templ_7745c5c3_Var3 = templ.NopComponent
+		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var4 == nil {
+			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<style>\r\n    * {\r\n        box-sizing: border-box;\r\n        margin: 0;\r\n        padding: 0;\r\n    }\r\n\r\n    body {\r\n        background-color: var(--light-gray);\r\n        display: flex;\r\n        justify-content: center;\r\n        align-items: center;\r\n        min-height: 100vh;\r\n        padding: 20px;\r\n    }\r\n    </style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<style>\r\n    * {\r\n        box-sizing: border-box;\r\n        margin: 0;\r\n        padding: 0;\r\n    }\r\n\r\n    body {\r\n        background-color: var(--light-gray);\r\n        display: flex;\r\n        justify-content: center;\r\n        align-items: center;\r\n        min-height: 100vh;\r\n        padding: 20px;\r\n    }\r\n\r\n    .notification-container {\r\n        position: fixed;\r\n        top: 20px;\r\n        left: 20px;\r\n        width: 300px;\r\n        z-index: 1000;\r\n    }\r\n\r\n    #notification-area {\r\n        display: flex;\r\n        flex-direction: column;\r\n        gap: 10px;\r\n    }\r\n\r\n    .notification {\r\n        padding: 15px;\r\n        border-radius: 5px;\r\n        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);\r\n        background: white;\r\n        animation: slideIn 0.3s ease-out;\r\n    }\r\n\r\n    @keyframes slideIn {\r\n        from {\r\n            transform: translateX(100%);\r\n            opacity: 0;\r\n        }\r\n\r\n        to {\r\n            transform: translateX(0);\r\n            opacity: 1;\r\n        }\r\n    }\r\n</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

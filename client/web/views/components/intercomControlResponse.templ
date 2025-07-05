@@ -1,0 +1,81 @@
+package components
+
+import "time"
+
+//statuses: "success" "fail" "error" 
+
+templ IntercomControlResponse(msg string, status string) {
+@IntercomControlResponseStyle()
+{{ nowTime := time.Now() }}
+{{ timeStr := nowTime.Format("2006-01-02 15:04:05") }}
+<div class={
+            templ.KV("intercom-response success", status == "success" ),
+            templ.KV("intercom-response fail", status == "fail" ),
+            templ.KV("intercom-response error", status == "error" )}>
+    <div class="intercom-response-content">
+        <svg class="intercom-response-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div class="intercom-response-messages">
+            <span class="intercom-response-message">{ timeStr }</span>
+            <span class="intercom-response-message">{ msg }</span>
+        </div>
+    </div>
+</div>
+}
+
+templ IntercomControlResponseStyle() {
+<style>
+    .intercom-response {
+        margin-top: 15px;
+        background-color: #2d3748;
+        color: #f7fafc;
+        padding: 12px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        max-width: 350px;
+        min-width: 350px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .intercom-response-content {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .intercom-response-icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        color: #ffffff;
+    }
+
+    .intercom-response-messages {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .intercom-response-message {
+        line-height: 1.4;
+    }
+
+    .htmx-swapping .intercom-response {
+        opacity: 0;
+        transform: translateX(-10px);
+        transition: all 0.3s ease-out;
+    }
+    .intercom-response.success {
+            background-color: #2f855a;
+        }
+    .intercom-response.error {
+            background-color: #d84242;
+        }
+    .intercom-response.fail {
+            background-color: #d16100;
+        }  
+</style>
+}

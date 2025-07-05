@@ -1,7 +1,10 @@
 package storage
 
 import (
+	"domofonEmulator/client/models"
 	"domofonEmulator/config"
+	"encoding/json"
+	"fmt"
 	"runtime"
 	"time"
 
@@ -40,4 +43,40 @@ func (s *SessionStorage) GetSession(c *fiber.Ctx) (*session.Session, error) {
 
 func (s *SessionStorage) SaveSession(sess *session.Session) error {
 	return sess.Save()
+}
+
+func (s *SessionStorage) GetActiveIntercomData(c *fiber.Ctx) (models.Intercom, error) {
+	sess, err := s.GetSession(c)
+	if err != nil {
+		return models.Intercom{}, err
+	}
+
+	raw := sess.Get("intercom_data")
+	jsonStr, ok := raw.(string)
+	if !ok {
+		return models.Intercom{}, err
+	}
+
+	var intercomData models.Intercom
+	if err := json.Unmarshal([]byte(jsonStr), &intercomData); err != nil {
+		return models.Intercom{}, err
+	}
+
+	return intercomData, nil
+}
+
+func (s *SessionStorage) SetActiveIntercomData(c *fiber.Ctx, intercom models.Intercom) error {
+	sess, err := s.GetSession(c)
+	if err != nil {
+		return fmt.Errorf("failed to get session: %w", err)
+	}
+	jsonData, err := json.Marshal(intercom)
+	if err != nil {
+		return fmt.Errorf("failed to marshal intercom data: %w", err)
+	}
+	sess.Set("intercom_data", string(jsonData))
+	if err := sess.Save(); err != nil {
+		return fmt.Errorf("failed to save session: %w", err)
+	}
+	return nil
 }

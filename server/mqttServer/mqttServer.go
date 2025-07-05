@@ -58,6 +58,90 @@ func (s *Server) Disconnect() {
 	s.logger.Info().Msg("MQTT client disconnected")
 }
 
+func (s *Server) ListenForIntercomPowerOnOff(ctx context.Context) {
+	err := s.Subscribe("intercom/fromclient/power", func(payload []byte) {
+		if s.mqqtServerRepository.Dbpool == nil {
+			s.logger.Fatal().Msg("MQTT repository or DB pool is nil")
+			return
+		}
+		var powerRequest struct {
+			ID     int    `json:"id"`
+			Action string `json:"action"`
+		}
+		if err := json.Unmarshal(payload, &powerRequest); err != nil {
+			s.logger.Error().
+				Err(err).
+				Str("payload", string(payload)).
+				Msg("Failed to parse intercom power on/off request message")
+			return
+		}
+		s.logger.Info().
+			Int("ID", powerRequest.ID).
+			Str("Action", powerRequest.Action).
+			Msg("Received new intercom power on/off change request")
+		newStatus := powerRequest.Action == "on"
+		err := s.mqqtServerRepository.UpdateIntercomStatus(powerRequest.ID, newStatus)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to update intecrom data")
+			errorResponse := map[string]interface{}{
+				"success": false,
+				"message": "failed to update intercom status on server",
+			}
+			errTopic := fmt.Sprintf("intercom/fromserver/power/%d", powerRequest.ID)
+			if err := s.Publish(errTopic, errorResponse); err != nil {
+				s.logger.Error().Err(err).Msg("Failed to send error response")
+			}
+			return
+		}
+		updatedIntercom, err := s.mqqtServerRepository.GetIntercomByID(powerRequest.ID, s.logger)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to get intecrom data")
+			errorResponse := map[string]interface{}{
+				"success": false,
+				"message": "failed to get intercom data on server",
+			}
+			errTopic := fmt.Sprintf("intercom/fromserver/power/%d", powerRequest.ID)
+			if err := s.Publish(errTopic, errorResponse); err != nil {
+				s.logger.Error().Err(err).Msg("Failed to send error response")
+			}
+			return
+		}
+		fullUpdateTopic := fmt.Sprintf("intercom/fromserver/power/%d", powerRequest.ID)
+		fullResponse := map[string]interface{}{
+			"success":              true,
+			"message":              "ok",
+			"id":                   updatedIntercom.ID,
+			"mac_address":          updatedIntercom.MAC,
+			"door_status":          updatedIntercom.DoorStatus,
+			"intercom_status":      updatedIntercom.IntercomStatus,
+			"address":              updatedIntercom.Address,
+			"number_of_apartments": updatedIntercom.NumberOfApartments,
+			"is_calling":           updatedIntercom.IsCalling,
+			"created_at":           updatedIntercom.CreatedAt,
+			"updated_at":           updatedIntercom.UpdatedAt,
+		}
+		if err := s.Publish(fullUpdateTopic, fullResponse); err != nil {
+			s.logger.Error().
+				Err(err).
+				Str("topic", fullUpdateTopic).
+				Msg("Failed to send intercom data")
+			return
+		}
+		s.logger.Info().
+			Int("ID", powerRequest.ID).
+			Bool("NewStatus", newStatus).
+			Msg("Successfully updated and broadcasted updated intercom data")
+	})
+	if err != nil {
+		s.logger.Error().
+			Err(err).
+			Msg("Failed to subscribe to intercom power topic")
+		return
+	}
+	<-ctx.Done()
+	s.logger.Info().Msg("Stopping MQTT listener for intercom power state changes")
+}
+
 func (s *Server) ListenForIntercomConnections(ctx context.Context) {
 	err := s.Subscribe("intercom/fromclient/connect", func(payload []byte) {
 		if s.mqqtServerRepository.Dbpool == nil {

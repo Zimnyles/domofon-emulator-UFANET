@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-	"strings"
 	"time"
 )
 
@@ -13,7 +11,7 @@ type NewIntercomProperties struct {
 }
 
 type IntercomConnectResponse struct {
-	Success bool `json:"success"`
+	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Intercom
 }
@@ -21,7 +19,7 @@ type IntercomConnectResponse struct {
 type Intercom struct {
 	ID                 int       `json:"id"`
 	MAC                string    `json:"mac_address"`
-	IntercomStatus      bool      `json:"intercom_status"`
+	IntercomStatus     bool      `json:"intercom_status"`
 	DoorStatus         bool      `json:"door_status"`
 	Address            string    `json:"address"`
 	NumberOfApartments int       `json:"number_of_apartments"`
@@ -47,10 +45,17 @@ type CreateIntercomResponse struct {
 	Success bool
 	ID      int
 	IsNew   bool
-	Mac string
+	Mac     string
 	Message string
 }
 
-func (d *Intercom) Topic() string {
-	return fmt.Sprintf("%s/status", strings.ReplaceAll(d.MAC, ":", ""))
+type IntercomPowerOnOffRequest struct {
+	ID     int
+	Action string
+}
+
+type IntercomPowerOnOffResponse struct {
+	Success  bool   `json:"success"`
+	Message  string `json:"message"`
+	Intercom `json:"intercom,omitempty"`
 }

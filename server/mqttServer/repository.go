@@ -56,6 +56,25 @@ func (r *MqttServerRepository) CreateNewIntercom(intercom models.CreateIntercomC
 	return id, isNew, nil
 }
 
+func (r *MqttServerRepository) UpdateIntercomStatus(id int, status bool) error {
+	query := `
+        UPDATE intercoms 
+        SET 
+            intercom_status = $1,
+            updated_at = NOW()
+        WHERE id = $2
+    `
+	result, err := r.Dbpool.Exec(context.Background(), query, status, id)
+	if err != nil {
+		return fmt.Errorf("failed to execute update query: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("no intercom found with id %d", id)
+	}
+	return nil
+}
+
 func (r *MqttServerRepository) GetIntercomByID(id int, logger *zerolog.Logger) (models.Intercom, error) {
 	query := `
         SELECT 

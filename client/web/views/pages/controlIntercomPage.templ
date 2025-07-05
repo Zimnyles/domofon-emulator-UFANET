@@ -3,23 +3,29 @@ package pages
 import "domofonEmulator/client/web/views/components"
 import "domofonEmulator/client/models"
 import "domofonEmulator/client/web/views/layout"
+import "strconv"
 
 
 templ ControlInetcomPage(props models.Intercom) {
-    @layout.Layout(layout.LayoutProps{
-    Title: "DomofonPanel - Подключение домофона",
-    MetaDescription: "Подключение или регистрация нового домофона",
-    }){
-        <main>
-            @ControlInetcomPageStyle()
-            @components.SingleDomofonCard(props)
-        
-        </main>
-    }
+@layout.Layout(layout.LayoutProps{
+Title: "Панель домофона",
+MetaDescription: "Панель домофона",
+}){
+<main>
+    @ControlInetcomPageStyle()
+    {{ id := "domofon-card-" + strconv.Itoa(props.ID)}}
+    <div id={ id }>
+    @components.SingleDomofonCard(props)
+    </div>
+    <div class="notification-container">
+        <div id="notification-area"></div>
+    </div>
+</main>
+}
 }
 
 templ ControlInetcomPageStyle() {
-    <style>
+<style>
     * {
         box-sizing: border-box;
         margin: 0;
@@ -34,5 +40,39 @@ templ ControlInetcomPageStyle() {
         min-height: 100vh;
         padding: 20px;
     }
-    </style>
+
+    .notification-container {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        width: 300px;
+        z-index: 1000;
+    }
+
+    #notification-area {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .notification {
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        background: white;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+</style>
 }
