@@ -2,6 +2,7 @@ package api
 
 import (
 	"domofonEmulator/client/models"
+	mqttclient "domofonEmulator/client/mqttClient"
 	"domofonEmulator/client/storage"
 	"domofonEmulator/client/web/views/components"
 	"domofonEmulator/pkg/tadapter"
@@ -18,63 +19,194 @@ type ApiHandler struct {
 	logger         *zerolog.Logger
 	apiService     IApiService
 	sessionStorage *storage.SessionStorage
+	mqqtClient     mqttclient.Client
 }
 
 type IApiService interface {
 	CreateNewIntercomRequest(mac string, address string, apartments int) (bool, string)
 	CreateNewIntercomConnectionRequest(id int) (bool, string, *models.Intercom)
 	PowerIntercomRequest(id int, action string) (bool, string, *models.Intercom)
+	OpenDoorRequest(id int, apartment int) (bool, string, *models.Intercom)
+	CloseDoorRequest(id int) (bool, string, *models.Intercom)
+	CallRequest(id int, apartment int) (bool, string, *models.Intercom)
+	EndCallRequest(id int) (bool, string, *models.Intercom)
 }
 
-func NewHandler(router fiber.Router, logger *zerolog.Logger, apiService IApiService, sessionStorage *storage.SessionStorage) {
+func NewHandler(router fiber.Router, logger *zerolog.Logger, apiService IApiService, sessionStorage *storage.SessionStorage, mqqtClient mqttclient.Client) {
 	h := &ApiHandler{
 		router:         router,
 		logger:         logger,
 		apiService:     apiService,
 		sessionStorage: sessionStorage,
+		mqqtClient:     mqqtClient,
 	}
+	h.router.Post("/api/callIntercom", h.apiCallIntercom)
+	h.router.Post("/api/endcallIntercom", h.apiEndCallIntercom)
+
+	h.router.Post("/api/openIntercom", h.apiOpenIntercom)
+	h.router.Post("/api/closeIntercom", h.apiCloseIntercom)
+
 	h.router.Post("/api/createIntercom", h.apiCreateIntercom)
 	h.router.Post("/api/powerIntercom", h.apiPowerIntercom)
+
 	h.router.Post("/api/connect", h.apiConnectToIntercom)
+
+}
+
+
+func (h *ApiHandler) apiCallIntercom(c *fiber.Ctx) error {
+	apartment, err := strconv.Atoi(c.FormValue("call"))
+	if err != nil {
+		return h.renderError(c, "Неизвестная ошибка. Обратитесь к системному администратору")
+	}
+	activeIntercomData, err := h.sessionStorage.GetActiveIntercomData(c)
+	if err != nil {
+		h.logger.Info().Err(err).Msg("Cannot get active intercom data")
+		return h.renderError(c, "Ошибка сервера. Обратитесь к системному администратору")
+	}
+	if activeIntercomData.IsCalling {
+		return h.renderError(c, "Звонок уже идет. Завершите, чтобы начать новый")
+	}
+	if !activeIntercomData.IntercomStatus {
+		return h.renderError(c, "Домофон выключен. Совершить звонок невозможно")
+	}
+	
+
+	isSuccess, message, intercomData := h.apiService.CallRequest(activeIntercomData.ID, apartment)
+	if !isSuccess {
+		h.logger.Error().Err(err).Msg("Failed to get response from server")
+		return h.renderError(c, message)
+	}
+
+	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("Failed to update session data")
+		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")
+	}
+	fmt.Println(intercomData)
+
+	return tadapter.Render(c, tadapter.RenderIntercomAndNotificationResponse(message, intercomData), fiber.StatusOK)
+}
+
+func (h *ApiHandler) apiEndCallIntercom(c *fiber.Ctx) error {
+	activeIntercomData, err := h.sessionStorage.GetActiveIntercomData(c)
+	if err != nil {
+		h.logger.Info().Err(err).Msg("Cannot get active intercom data")
+		return h.renderError(c, "Ошибка сервера. Обратитесь к системному администратору")
+	}
+	if !activeIntercomData.IsCalling {
+		return h.renderError(c, "Звонок не идет")
+	}
+	if !activeIntercomData.IntercomStatus {
+		return h.renderError(c, "Домофон выключен. Звонок не идет")
+	}
+
+	isSuccess, message, intercomData := h.apiService.EndCallRequest(activeIntercomData.ID)
+	if !isSuccess {
+		h.logger.Error().Err(err).Msg("Failed to get response from server")
+		return h.renderError(c, message)
+	}
+
+	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("Failed to update session data")
+		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")
+	}
+
+	return tadapter.Render(c, tadapter.RenderIntercomAndNotificationResponse(message, intercomData), fiber.StatusOK)
+}
+
+func (h *ApiHandler) apiCloseIntercom(c *fiber.Ctx) error {
+	activeIntercomData, err := h.sessionStorage.GetActiveIntercomData(c)
+	if err != nil {
+		h.logger.Info().Err(err).Msg("Cannot get active intercom data")
+		return h.renderError(c, "Ошибка сервера. Обратитесь к системному администратору")
+	}
+
+	if !activeIntercomData.DoorStatus {
+		return h.renderError(c, "Дверь уже закрыта")
+	}
+
+	isSuccess, message, intercomData := h.apiService.CloseDoorRequest(activeIntercomData.ID)
+
+	if !isSuccess {
+		h.logger.Error().Err(err).Msg("Failed to get response from server")
+		return h.renderError(c, message)
+	}
+
+	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("Failed to update session data")
+		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")
+	}
+
+	return tadapter.Render(c, tadapter.RenderIntercomAndNotificationResponse(message, intercomData), fiber.StatusOK)
+}
+
+func (h *ApiHandler) apiOpenIntercom(c *fiber.Ctx) error {
+	apartment, err := strconv.Atoi(c.FormValue("opendoor"))
+	if err != nil {
+		return h.renderError(c, "Неизвестная ошибка. Обратитесь к системному администратору")
+	}
+
+	activeIntercomData, err := h.sessionStorage.GetActiveIntercomData(c)
+	if err != nil {
+		h.logger.Info().Err(err).Msg("Cannot get active intercom data")
+		return h.renderError(c, "Ошибка сервера. Обратитесь к системному администратору")
+	}
+
+	if !activeIntercomData.IntercomStatus {
+		return h.renderError(c, "Домофон выключен. Дверь уже открыта")
+	}
+
+	if activeIntercomData.DoorStatus {
+		return h.renderError(c, "Дверь уже открыта")
+	}
+
+	isSuccess, message, intercomData := h.apiService.OpenDoorRequest(activeIntercomData.ID, apartment)
+
+	if !isSuccess {
+		h.logger.Error().Err(err).Msg("Failed to get response from server")
+		return h.renderError(c, message)
+	}
+
+	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("Failed to update session data")
+		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")
+	}
+
+	return tadapter.Render(c, tadapter.RenderIntercomAndNotificationResponse(message, intercomData), fiber.StatusOK)
 
 }
 
 func (h *ApiHandler) apiPowerIntercom(c *fiber.Ctx) error {
 	action := c.FormValue("action")
 	if action != "on" && action != "off" {
-		status := "error"
-		msg := "Неизвестная ошибка. Обратитесь к системному администратору"
-		component := components.IntercomControlResponse(msg, status)
-		return tadapter.Render(c, component, fiber.StatusOK)
+		return h.renderError(c, "Неизвестная ошибка. Обратитесь к системному администратору")
 	}
 
 	activeIntercomData, err := h.sessionStorage.GetActiveIntercomData(c)
 	if err != nil {
 		h.logger.Info().Err(err).Msg("Cannot get active intercom data")
 	} else {
-		h.logger.Info().Str("New intercom power off/onn request from client", action).Int("Intercom ID:", activeIntercomData.ID)
+		h.logger.Info().Int("Intercom ID:", activeIntercomData.ID).Msg("New intercom power off/onn request from client")
 	}
 
 	isSuccess, message, intercomData := h.apiService.PowerIntercomRequest(activeIntercomData.ID, action)
 
 	if !isSuccess {
 		h.logger.Error().Err(err).Msg("Failed to update session data")
-		msg := message
-		status := "error"
-		component := components.IntercomControlResponse(msg, status)
-		return tadapter.Render(c, component, fiber.StatusOK)
+		return h.renderError(c, message)
 	}
 
 	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to update session data")
-		msg := "Ошибка сохранения данных. Обратитесь к системному администратору"
-		status := "error"
-		component := components.IntercomControlResponse(msg, status)
-		return tadapter.Render(c, component, fiber.StatusOK)
+		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")
 	}
 
-	return tadapter.Render(c, tadapter.RenderPowerIntercomResponse(message, intercomData), fiber.StatusOK)
+	return tadapter.Render(c, tadapter.RenderIntercomAndNotificationResponse(message, intercomData), fiber.StatusOK)
 }
 
 func (h *ApiHandler) apiConnectToIntercom(c *fiber.Ctx) error {
@@ -145,5 +277,11 @@ func (h *ApiHandler) apiCreateIntercom(c *fiber.Ctx) error {
 	}
 
 	component := components.NewIntercomResponse(message)
+	return tadapter.Render(c, component, fiber.StatusOK)
+}
+
+func (h *ApiHandler) renderError(c *fiber.Ctx, message string) error {
+	status := "error"
+	component := components.IntercomControlResponse(message, status)
 	return tadapter.Render(c, component, fiber.StatusOK)
 }

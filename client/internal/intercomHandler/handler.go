@@ -1,12 +1,11 @@
 package intercom
 
 import (
-	"domofonEmulator/client/models"
 	mqttclient "domofonEmulator/client/mqttClient"
 	"domofonEmulator/client/storage"
+	"domofonEmulator/client/web/views/components"
 	"domofonEmulator/client/web/views/pages"
 	"domofonEmulator/pkg/tadapter"
-	"encoding/json"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -37,23 +36,11 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtClient mqttclie
 }
 
 func (h *IntercomHandler) connectIntercome(c *fiber.Ctx) error {
-	sess, err := h.sessionStorage.GetSession(c)
+
+	intercomData, err := h.sessionStorage.GetActiveIntercomData(c)
 	if err != nil {
-		h.logger.Error().Err(err).Msg("Failed to get session")
-		return c.Status(fiber.StatusInternalServerError).SendString("Session error")
-	}
-
-	raw := sess.Get("intercom_data")
-	jsonStr, ok := raw.(string)
-	if !ok {
-		h.logger.Warn().Msg("intercom_data not found or not a string")
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid session data")
-	}
-
-	var intercomData models.Intercom
-	if err := json.Unmarshal([]byte(jsonStr), &intercomData); err != nil {
-		h.logger.Error().Err(err).Msg("Failed to unmarshal intercom data from session")
-		return c.Status(fiber.StatusInternalServerError).SendString("Corrupted session data")
+		component := components.ConnectIntercomResponse("Ошибка сервера. Обратитесь к системному администратору")
+		return tadapter.Render(c, component, fiber.StatusOK)
 	}
 
 	linkIDstring := c.Params("id")

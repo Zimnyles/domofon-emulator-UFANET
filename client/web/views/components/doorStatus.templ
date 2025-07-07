@@ -1,0 +1,15 @@
+package components
+
+import (
+"strconv"
+"domofonEmulator/client/models"
+)
+
+templ IntercomWithStatus(message, status string, intercom *models.Intercom) {
+<div id="notification-area" hx-swap-oob="true">
+    @IntercomControlResponse(message, status)
+</div>
+<div id={ "domofon-card-" + strconv.Itoa(intercom.ID) } hx-swap-oob="true">
+    @SingleDomofonCard(*intercom)
+</div>
+}

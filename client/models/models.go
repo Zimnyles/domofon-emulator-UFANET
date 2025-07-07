@@ -59,3 +59,15 @@ type IntercomPowerOnOffResponse struct {
 	Message  string `json:"message"`
 	Intercom `json:"intercom,omitempty"`
 }
+
+type IntercomOpenDoorResponse struct {
+	Success  bool   `json:"success"`
+	Message  string `json:"message"`
+	Intercom `json:"intercom,omitempty"`
+}
+
+type IntercomCallResponse struct {
+	Success  bool   `json:"success"`
+	Message  string `json:"message"`
+	Intercom `json:"intercom,omitempty"`
+}

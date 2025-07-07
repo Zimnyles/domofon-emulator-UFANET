@@ -63,7 +63,7 @@ func main() {
 
 	//Hadlers
 	home.NewHandler(clientApp, logger, *mqttClient)
-	api.NewHandler(clientApp, logger, apiService, sessionStorage)
+	api.NewHandler(clientApp, logger, apiService, sessionStorage, *mqttClient)
 	intercom.NewHandler(clientApp, logger, *mqttClient, intercomService, sessionStorage)
 
 	//Intercoms statuses sending

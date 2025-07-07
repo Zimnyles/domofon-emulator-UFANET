@@ -58,6 +58,109 @@ func (s *Server) Disconnect() {
 	s.logger.Info().Msg("MQTT client disconnected")
 }
 
+func (s *Server) ListenForCalls(ctx context.Context) {
+	err := s.Subscribe("intercom/fromclient/call", func(payload []byte) {
+		var callRequest struct {
+			ID        int    `json:"id"`
+			Action    string `json:"action"`
+			Apartment int
+		}
+
+		if err := json.Unmarshal(payload, &callRequest); err != nil {
+			s.logger.Error().Err(err).Msg("Failed to parse door control request")
+			return
+		}
+
+		isCall := callRequest.Action == "call"
+		if isCall {
+			err := s.mqqtServerRepository.UpdateCallStatus(callRequest.ID, isCall)
+			if err != nil {
+				s.logger.Error().Err(err).Msg("Failed to update door status")
+				return
+			}
+		} else {
+			err := s.mqqtServerRepository.UpdateCallStatus(callRequest.ID, isCall)
+			if err != nil {
+				s.logger.Error().Err(err).Msg("Failed to update door status")
+				return
+			}
+		}
+
+		updatedIntercom, err := s.mqqtServerRepository.GetIntercomByID(callRequest.ID, s.logger)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to get intercom data")
+			return
+		}
+
+		responseTopic := fmt.Sprintf("intercom/fromserver/call/%d", callRequest.ID)
+		response := map[string]interface{}{
+			"success":     true,
+			"door_status": isCall,
+			"intercom":    updatedIntercom,
+			"message":     "Дверь успешно " + callRequest.Action,
+		}
+		s.Publish(responseTopic, response)
+
+	})
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to subscribe to door control topic")
+	}
+
+	<-ctx.Done()
+}
+
+func (s *Server) ListenForDoorControl(ctx context.Context) {
+	err := s.Subscribe("intercom/fromclient/door", func(payload []byte) {
+		var doorRequest struct {
+			ID        int    `json:"id"`
+			Action    string `json:"action"`
+			Apartment int
+		}
+
+		if err := json.Unmarshal(payload, &doorRequest); err != nil {
+			s.logger.Error().Err(err).Msg("Failed to parse door control request")
+			return
+		}
+
+		isOpen := doorRequest.Action == "open"
+		if isOpen {
+			err := s.mqqtServerRepository.UpdateIntercomDoorStatus(doorRequest.ID, isOpen)
+			if err != nil {
+				s.logger.Error().Err(err).Msg("Failed to update door status")
+				return
+			}
+		} else {
+			err := s.mqqtServerRepository.UpdateIntercomDoorStatus(doorRequest.ID, isOpen)
+			if err != nil {
+				s.logger.Error().Err(err).Msg("Failed to update door status")
+				return
+			}
+		}
+
+		updatedIntercom, err := s.mqqtServerRepository.GetIntercomByID(doorRequest.ID, s.logger)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to get intercom data")
+			return
+		}
+
+		responseTopic := fmt.Sprintf("intercom/fromserver/door/%d", doorRequest.ID)
+		response := map[string]interface{}{
+			"success":     true,
+			"door_status": isOpen,
+			"intercom":    updatedIntercom,
+			"message":     "Дверь успешно " + doorRequest.Action,
+		}
+		s.Publish(responseTopic, response)
+
+	})
+
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to subscribe to door control topic")
+	}
+
+	<-ctx.Done()
+}
+
 func (s *Server) ListenForIntercomPowerOnOff(ctx context.Context) {
 	err := s.Subscribe("intercom/fromclient/power", func(payload []byte) {
 		if s.mqqtServerRepository.Dbpool == nil {
@@ -195,6 +298,7 @@ func (s *Server) ListenForIntercomConnections(ctx context.Context) {
 			"success":              true,
 			"message":              "ok",
 			"id":                   intercomData.ID,
+			"intercom_status":      intercomData.IntercomStatus,
 			"mac_address":          intercomData.MAC,
 			"door_status":          intercomData.DoorStatus,
 			"address":              intercomData.Address,

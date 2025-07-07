@@ -61,6 +61,46 @@ func (r *MqttServerRepository) UpdateIntercomStatus(id int, status bool) error {
         UPDATE intercoms 
         SET 
             intercom_status = $1,
+            door_status = CASE WHEN $1 = false THEN true ELSE false END,
+			is_calling = CASE WHEN $1 = true THEN false ELSE false END,
+            updated_at = NOW()
+        WHERE id = $2
+    `
+	result, err := r.Dbpool.Exec(context.Background(), query, status, id)
+	if err != nil {
+		return fmt.Errorf("failed to execute update query: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("no intercom found with id %d", id)
+	}
+	return nil
+}
+
+func (r *MqttServerRepository) UpdateIntercomDoorStatus(id int, status bool) error {
+	query := `
+        UPDATE intercoms 
+        SET 
+            door_status = $1,
+            updated_at = NOW()
+        WHERE id = $2
+    `
+	result, err := r.Dbpool.Exec(context.Background(), query, status, id)
+	if err != nil {
+		return fmt.Errorf("failed to execute update query: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("no intercom found with id %d", id)
+	}
+	return nil
+}
+
+func (r *MqttServerRepository) UpdateCallStatus(id int, status bool) error {
+	query := `
+        UPDATE intercoms 
+        SET 
+            is_calling = $1,
             updated_at = NOW()
         WHERE id = $2
     `

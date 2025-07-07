@@ -26,6 +26,113 @@ func NewAPIService(logger *zerolog.Logger, mqqtClient mqttclient.Client, mqttCon
 	}
 }
 
+func (s *APIService) CallRequest(id int, apartment int) (bool, string, *models.Intercom) {
+	return s.sendCallCommand(id, "call", apartment)
+}
+
+func (s *APIService) EndCallRequest(id int) (bool, string, *models.Intercom) {
+	return s.sendCallCommand(id, "endcall", 0)
+}
+
+func (s *APIService) sendCallCommand(id int, action string, apartment int) (bool, string, *models.Intercom) {
+	responseChan := make(chan models.IntercomCallResponse, 1)
+	responseTopic := fmt.Sprintf("intercom/fromserver/call/%d", id)
+
+	err := s.mqqtClient.Subscribe(responseTopic, func(payload []byte) {
+		var response models.IntercomCallResponse
+
+		if err := json.Unmarshal(payload, &response); err != nil {
+			responseChan <- models.IntercomCallResponse{
+				Success: false,
+				Message: "Ошибка обработки ответа",
+			}
+			return
+		}
+
+		responseChan <- models.IntercomCallResponse{
+			Success:  response.Success,
+			Message:  response.Message,
+			Intercom: response.Intercom,
+		}
+	})
+
+	if err != nil {
+		return false, "Ошибка подписки на ответ", nil
+	}
+
+	request := map[string]interface{}{
+		"id":        id,
+		"action":    action,
+		"apartment": apartment,
+	}
+	payload, _ := json.Marshal(request)
+
+	if err := s.mqqtClient.Publish("intercom/fromclient/call", payload); err != nil {
+		return false, "Ошибка отправки команды", nil
+	}
+
+	select {
+	case response := <-responseChan:
+		return response.Success, "Запрос успешно доставлен и обработан сервером. " + response.Message, &response.Intercom
+	case <-time.After(10 * time.Second):
+		return false, "Таймаут ожидания ответа", nil
+	}
+
+}
+
+func (s *APIService) OpenDoorRequest(id int, apartment int) (bool, string, *models.Intercom) {
+	return s.sendDoorCommand(id, "open", apartment)
+}
+
+func (s *APIService) CloseDoorRequest(id int) (bool, string, *models.Intercom) {
+	return s.sendDoorCommand(id, "close", 0)
+}
+
+func (s *APIService) sendDoorCommand(id int, action string, apartment int) (bool, string, *models.Intercom) {
+	responseChan := make(chan models.IntercomOpenDoorResponse, 1)
+	responseTopic := fmt.Sprintf("intercom/fromserver/door/%d", id)
+
+	err := s.mqqtClient.Subscribe(responseTopic, func(payload []byte) {
+		var response models.IntercomOpenDoorResponse
+
+		if err := json.Unmarshal(payload, &response); err != nil {
+			responseChan <- models.IntercomOpenDoorResponse{
+				Success: false,
+				Message: "Ошибка обработки ответа",
+			}
+			return
+		}
+
+		responseChan <- models.IntercomOpenDoorResponse{
+			Success:  response.Success,
+			Message:  response.Message,
+			Intercom: response.Intercom,
+		}
+	})
+
+	if err != nil {
+		return false, "Ошибка подписки на ответ", nil
+	}
+
+	request := map[string]interface{}{
+		"id":        id,
+		"action":    action,
+		"apartment": apartment,
+	}
+	payload, _ := json.Marshal(request)
+
+	if err := s.mqqtClient.Publish("intercom/fromclient/door", payload); err != nil {
+		return false, "Ошибка отправки команды", nil
+	}
+
+	select {
+	case response := <-responseChan:
+		return response.Success, "Запрос успешно доставлен и обработан сервером. " + response.Message, &response.Intercom
+	case <-time.After(10 * time.Second):
+		return false, "Таймаут ожидания ответа", nil
+	}
+}
+
 func (s *APIService) PowerIntercomRequest(id int, action string) (bool, string, *models.Intercom) {
 	responseChan := make(chan models.IntercomPowerOnOffResponse, 1)
 	responseTopic := fmt.Sprintf("intercom/fromserver/power/%d", id)
