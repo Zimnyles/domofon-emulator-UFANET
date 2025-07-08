@@ -4,7 +4,7 @@ import "domofonEmulator/client/web/views/components"
 import "domofonEmulator/client/models"
 import "domofonEmulator/client/web/views/layout"
 import "strconv"
-
+import "encoding/json"
 
 templ ControlInetcomPage(props models.Intercom) {
 @layout.Layout(layout.LayoutProps{
@@ -15,18 +15,22 @@ MetaDescription: "Панель домофона",
     @ControlInetcomPageStyle()
     {{ id := "domofon-card-" + strconv.Itoa(props.ID)}}
     <div id={ id }>
-    @components.SingleDomofonCard(props)
+        @components.SingleDomofonCard(props)
     </div>
     <div class="notification-container">
         <div id="notification-area"></div>
+        <div id="notification-area-2"></div>
     </div>
+    @ControlIntercomScript(props)
+
+
 </main>
 }
 }
 
 templ ControlInetcomPageStyle() {
 <style>
-    * {
+    * { 
         box-sizing: border-box;
         margin: 0;
         padding: 0;
@@ -55,12 +59,45 @@ templ ControlInetcomPageStyle() {
         gap: 10px;
     }
 
+    #notification-area-2 {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 320px;
+        z-index: 9999;
+        
+    }
+    .notification-area-2{
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
     .notification {
+        margin-bottom: 10px;
         padding: 15px;
         border-radius: 5px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         background: white;
         animation: slideIn 0.3s ease-out;
+    }
+
+
+    .notification.error {
+        background-color: #fff5f5;
+        border-left: 4px solid #ff6b6b;
+    }
+
+    .notification.success {
+        margin-top: 15px;
+        background-color: #2f855a;
+        color: #f7fafc;
+        padding: 12px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        max-width: 350px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
     }
 
     @keyframes slideIn {
@@ -75,4 +112,169 @@ templ ControlInetcomPageStyle() {
         }
     }
 </style>
+}
+
+templ ControlIntercomScript(props models.Intercom) {
+    {{ jsonData, err := json.Marshal(props) }}
+    if err == nil {
+    <div id="intercom-data" data-intercom={ string(jsonData) } style="display:none;"></div>
+    }
+    <script>
+        let publishIntervalId = null;
+        function isPahoLoaded() {
+            return typeof Paho !== 'undefined' &&
+                typeof Paho.MQTT !== 'undefined' &&
+                typeof Paho.MQTT.Client !== 'undefined';
+        }
+        function loadPahoFallback() {
+            return new Promise((resolve) => {
+                if (isPahoLoaded()) {
+                    resolve();
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js";
+                script.onload = () => {
+                    if (isPahoLoaded()) {
+                        resolve();
+                    } else {
+                        console.error('Fallback Paho loading failed');
+                        showError();
+                    }
+                };
+                script.onerror = () => {
+                    console.error('Error loading Paho from fallback CDN');
+                    showError();
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        function showError() {
+            showNotification(``, 'error', 15000);
+        }
+
+        function showNotification(message, type = "info") {
+                const notificationArea = document.getElementById('notification-area-2');
+                if (!notificationArea) return;
+
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = message;
+                notificationArea.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 50); 
+                }, 3000);
+            }
+
+        let intercomData = null;
+
+        function loadInitialIntercomData() {
+            const dataElement = document.getElementById('intercom-data');
+            if (dataElement && dataElement.dataset.intercom) {
+                try {
+                    intercomData = JSON.parse(dataElement.dataset.intercom);
+                } catch (e) {
+                    console.error("Ошибка парсинга данных:", e);
+                    showNotification("Ошибка обработки данных", "error");
+                    intercomData = null;
+                }
+            }
+        }
+
+        function updateIntercomState(newState) {
+            if (!intercomData) {
+                intercomData = {};
+            }
+            intercomData = { ...intercomData, ...newState };
+            console.log("Обновлено состояние домофона:", intercomData);
+        }
+
+        const mqttConfig = {
+            brokerHost: "127.0.0.1",
+            brokerPort: 8083,
+            clientId: "client-" + Math.random().toString(16).substr(2, 8),
+            topic: "intercom/status/" + {{ props.ID }},
+        interval: 30000
+            };
+
+        let mqttClient = null;
+
+        function initMqttClient() {
+            const brokerUrl = `ws://${mqttConfig.brokerHost}:${mqttConfig.brokerPort}/mqtt`;
+            mqttClient = new Paho.MQTT.Client(brokerUrl, mqttConfig.clientId);
+
+            mqttClient.onConnectionLost = (response) => {
+                console.error("Соединение потеряно:", response.errorMessage);
+                showNotification("Потеряно соединение с MQTT", "error");
+            };
+
+            mqttClient.connect({
+                onSuccess: () => {
+                    console.log("Успешное подключение к MQTT");
+                    showNotification("Подключено к MQTT", "success");
+                    startPublishing();
+                },
+                onFailure: (err) => {
+                    console.error("Ошибка подключения:", err);
+                    showNotification("Ошибка подключения к MQTT", "error");
+                },
+            });
+        }
+
+        function startPublishing() {
+                if (intercomData && mqttClient && mqttClient.isConnected()) {
+                    const message = new Paho.MQTT.Message(
+                        JSON.stringify(intercomData)
+                    );
+                    message.destinationName = mqttConfig.topic;
+                    mqttClient.send(message);
+                    showNotification("Сообщение о статусе домофона отправлено", "success");
+                }
+
+                publishIntervalId = setInterval(() => {
+                    if (intercomData && mqttClient && mqttClient.isConnected()) {
+                        const message = new Paho.MQTT.Message(
+                            JSON.stringify(intercomData)
+                        );
+                        message.destinationName = mqttConfig.topic;
+                        mqttClient.send(message);
+                        showNotification("Сообщение о статусе домофона отправлено", "success");
+                    }
+                }, mqttConfig.interval);
+            }
+
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!isPahoLoaded()) {
+                console.warn('Paho not loaded, trying fallback...');
+                await loadPahoFallback();
+            }
+
+            if (isPahoLoaded()) {
+                loadInitialIntercomData();
+                initMqttClient();
+            } else {
+                showError();
+                document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+                const simulateOffBtn = document.querySelector('.power-buttonOFF-sim');
+                if (simulateOffBtn) {
+                    simulateOffBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (publishIntervalId) {
+                            clearInterval(publishIntervalId);
+                            publishIntervalId = null;
+                            console.log("Публикация остановлена — домофон выключен (симуляция)");
+                            showNotification("Сигналы домофона отключены", "info");
+                        }
+                    });
+                }
+            });
+    </script>
 }

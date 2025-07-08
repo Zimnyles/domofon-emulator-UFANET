@@ -16,9 +16,11 @@ services:
     image: eclipse-mosquitto:2
     ports:
       - "1883:1883"
+      - "8083:8083"
     volumes:
       - ./mosquitto.conf:/server/mqtt/config/mqtt.conf
     command: /usr/sbin/mosquitto -c /server/mqtt/config/mqtt.conf
+    restart: unless-stopped
 
   redis:
     image: redis:7.2

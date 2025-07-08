@@ -2,7 +2,6 @@ package api
 
 import (
 	"domofonEmulator/client/models"
-	mqttclient "domofonEmulator/client/mqttClient"
 	"domofonEmulator/client/storage"
 	"domofonEmulator/client/web/views/components"
 	"domofonEmulator/pkg/tadapter"
@@ -19,7 +18,6 @@ type ApiHandler struct {
 	logger         *zerolog.Logger
 	apiService     IApiService
 	sessionStorage *storage.SessionStorage
-	mqqtClient     mqttclient.Client
 }
 
 type IApiService interface {
@@ -32,13 +30,12 @@ type IApiService interface {
 	EndCallRequest(id int) (bool, string, *models.Intercom)
 }
 
-func NewHandler(router fiber.Router, logger *zerolog.Logger, apiService IApiService, sessionStorage *storage.SessionStorage, mqqtClient mqttclient.Client) {
+func NewHandler(router fiber.Router, logger *zerolog.Logger, apiService IApiService, sessionStorage *storage.SessionStorage) {
 	h := &ApiHandler{
 		router:         router,
 		logger:         logger,
 		apiService:     apiService,
 		sessionStorage: sessionStorage,
-		mqqtClient:     mqqtClient,
 	}
 	h.router.Post("/api/callIntercom", h.apiCallIntercom)
 	h.router.Post("/api/endcallIntercom", h.apiEndCallIntercom)
@@ -52,7 +49,6 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, apiService IApiServ
 	h.router.Post("/api/connect", h.apiConnectToIntercom)
 
 }
-
 
 func (h *ApiHandler) apiCallIntercom(c *fiber.Ctx) error {
 	apartment, err := strconv.Atoi(c.FormValue("call"))
@@ -70,7 +66,6 @@ func (h *ApiHandler) apiCallIntercom(c *fiber.Ctx) error {
 	if !activeIntercomData.IntercomStatus {
 		return h.renderError(c, "Домофон выключен. Совершить звонок невозможно")
 	}
-	
 
 	isSuccess, message, intercomData := h.apiService.CallRequest(activeIntercomData.ID, apartment)
 	if !isSuccess {
@@ -125,6 +120,10 @@ func (h *ApiHandler) apiCloseIntercom(c *fiber.Ctx) error {
 
 	if !activeIntercomData.DoorStatus {
 		return h.renderError(c, "Дверь уже закрыта")
+	}
+
+	if !activeIntercomData.IntercomStatus {
+		return h.renderError(c, "Домофон выключен, дверь не может быть закрыта")
 	}
 
 	isSuccess, message, intercomData := h.apiService.CloseDoorRequest(activeIntercomData.ID)
@@ -241,6 +240,7 @@ func (h *ApiHandler) apiConnectToIntercom(c *fiber.Ctx) error {
 			h.logger.Error().Err(err).Msg("Failed to save session")
 			return c.Status(fiber.StatusInternalServerError).SendString("Session save error")
 		}
+
 		c.Set("HX-Redirect", fmt.Sprintf("/intercom/%d", intercomData.ID))
 		return c.SendStatus(fiber.StatusNoContent)
 	}

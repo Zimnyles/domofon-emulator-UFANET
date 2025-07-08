@@ -12,6 +12,7 @@ import "domofonEmulator/client/web/views/components"
 import "domofonEmulator/client/models"
 import "domofonEmulator/client/web/views/layout"
 import "strconv"
+import "encoding/json"
 
 func ControlInetcomPage(props models.Intercom) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -76,7 +77,15 @@ func ControlInetcomPage(props models.Intercom) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"notification-container\"><div id=\"notification-area\"></div></div></main>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"notification-container\"><div id=\"notification-area\"></div><div id=\"notification-area-2\"></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = ControlIntercomScript(props).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</main>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -114,7 +123,68 @@ func ControlInetcomPageStyle() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<style>\r\n    * {\r\n        box-sizing: border-box;\r\n        margin: 0;\r\n        padding: 0;\r\n    }\r\n\r\n    body {\r\n        background-color: var(--light-gray);\r\n        display: flex;\r\n        justify-content: center;\r\n        align-items: center;\r\n        min-height: 100vh;\r\n        padding: 20px;\r\n    }\r\n\r\n    .notification-container {\r\n        position: fixed;\r\n        top: 20px;\r\n        left: 20px;\r\n        width: 300px;\r\n        z-index: 1000;\r\n    }\r\n\r\n    #notification-area {\r\n        display: flex;\r\n        flex-direction: column;\r\n        gap: 10px;\r\n    }\r\n\r\n    .notification {\r\n        padding: 15px;\r\n        border-radius: 5px;\r\n        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);\r\n        background: white;\r\n        animation: slideIn 0.3s ease-out;\r\n    }\r\n\r\n    @keyframes slideIn {\r\n        from {\r\n            transform: translateX(100%);\r\n            opacity: 0;\r\n        }\r\n\r\n        to {\r\n            transform: translateX(0);\r\n            opacity: 1;\r\n        }\r\n    }\r\n</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<style>\r\n    * { \r\n        box-sizing: border-box;\r\n        margin: 0;\r\n        padding: 0;\r\n    }\r\n\r\n    body {\r\n        background-color: var(--light-gray);\r\n        display: flex;\r\n        justify-content: center;\r\n        align-items: center;\r\n        min-height: 100vh;\r\n        padding: 20px;\r\n    }\r\n\r\n    .notification-container {\r\n        position: fixed;\r\n        top: 20px;\r\n        left: 20px;\r\n        width: 300px;\r\n        z-index: 1000;\r\n    }\r\n\r\n    #notification-area {\r\n        display: flex;\r\n        flex-direction: column;\r\n        gap: 10px;\r\n    }\r\n\r\n    #notification-area-2 {\r\n        position: fixed;\r\n        top: 20px;\r\n        right: 20px;\r\n        width: 320px;\r\n        z-index: 9999;\r\n        \r\n    }\r\n    .notification-area-2{\r\n        display: flex;\r\n        flex-direction: column;\r\n        gap: 10px;\r\n    }\r\n\r\n    .notification {\r\n        margin-bottom: 10px;\r\n        padding: 15px;\r\n        border-radius: 5px;\r\n        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);\r\n        background: white;\r\n        animation: slideIn 0.3s ease-out;\r\n    }\r\n\r\n\r\n    .notification.error {\r\n        background-color: #fff5f5;\r\n        border-left: 4px solid #ff6b6b;\r\n    }\r\n\r\n    .notification.success {\r\n        margin-top: 15px;\r\n        background-color: #2f855a;\r\n        color: #f7fafc;\r\n        padding: 12px 16px;\r\n        border-radius: 6px;\r\n        font-size: 14px;\r\n        max-width: 350px;\r\n        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);\r\n        transition: all 0.3s ease;\r\n    }\r\n\r\n    @keyframes slideIn {\r\n        from {\r\n            transform: translateX(100%);\r\n            opacity: 0;\r\n        }\r\n\r\n        to {\r\n            transform: translateX(0);\r\n            opacity: 1;\r\n        }\r\n    }\r\n</style>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func ControlIntercomScript(props models.Intercom) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		jsonData, err := json.Marshal(props)
+		if err == nil {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div id=\"intercom-data\" data-intercom=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var6 string
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(string(jsonData))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/pages/controlIntercomPage.templ`, Line: 120, Col: 60}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" style=\"display:none;\"></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<script>\r\n        let publishIntervalId = null;\r\n        function isPahoLoaded() {\r\n            return typeof Paho !== 'undefined' &&\r\n                typeof Paho.MQTT !== 'undefined' &&\r\n                typeof Paho.MQTT.Client !== 'undefined';\r\n        }\r\n        function loadPahoFallback() {\r\n            return new Promise((resolve) => {\r\n                if (isPahoLoaded()) {\r\n                    resolve();\r\n                    return;\r\n                }\r\n                const script = document.createElement('script');\r\n                script.src = \"https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js\";\r\n                script.onload = () => {\r\n                    if (isPahoLoaded()) {\r\n                        resolve();\r\n                    } else {\r\n                        console.error('Fallback Paho loading failed');\r\n                        showError();\r\n                    }\r\n                };\r\n                script.onerror = () => {\r\n                    console.error('Error loading Paho from fallback CDN');\r\n                    showError();\r\n                };\r\n                document.head.appendChild(script);\r\n            });\r\n        }\r\n\r\n        function showError() {\r\n            showNotification(``, 'error', 15000);\r\n        }\r\n\r\n        function showNotification(message, type = \"info\") {\r\n                const notificationArea = document.getElementById('notification-area-2');\r\n                if (!notificationArea) return;\r\n\r\n                const notification = document.createElement('div');\r\n                notification.className = `notification ${type}`;\r\n                notification.innerHTML = message;\r\n                notificationArea.appendChild(notification);\r\n\r\n                setTimeout(() => {\r\n                    notification.style.opacity = '0';\r\n                    setTimeout(() => notification.remove(), 50); \r\n                }, 3000);\r\n            }\r\n\r\n        let intercomData = null;\r\n\r\n        function loadInitialIntercomData() {\r\n            const dataElement = document.getElementById('intercom-data');\r\n            if (dataElement && dataElement.dataset.intercom) {\r\n                try {\r\n                    intercomData = JSON.parse(dataElement.dataset.intercom);\r\n                } catch (e) {\r\n                    console.error(\"Ошибка парсинга данных:\", e);\r\n                    showNotification(\"Ошибка обработки данных\", \"error\");\r\n                    intercomData = null;\r\n                }\r\n            }\r\n        }\r\n\r\n        function updateIntercomState(newState) {\r\n            if (!intercomData) {\r\n                intercomData = {};\r\n            }\r\n            intercomData = { ...intercomData, ...newState };\r\n            console.log(\"Обновлено состояние домофона:\", intercomData);\r\n        }\r\n\r\n        const mqttConfig = {\r\n            brokerHost: \"127.0.0.1\",\r\n            brokerPort: 8083,\r\n            clientId: \"client-\" + Math.random().toString(16).substr(2, 8),\r\n            topic: \"intercom/status/\" + ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Var7, templ_7745c5c3_Err := templruntime.ScriptContentOutsideStringLiteral(props.ID)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `client/web/views/pages/controlIntercomPage.templ`, Line: 199, Col: 51}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, ",\r\n        interval: 30000\r\n            };\r\n\r\n        let mqttClient = null;\r\n\r\n        function initMqttClient() {\r\n            const brokerUrl = `ws://${mqttConfig.brokerHost}:${mqttConfig.brokerPort}/mqtt`;\r\n            mqttClient = new Paho.MQTT.Client(brokerUrl, mqttConfig.clientId);\r\n\r\n            mqttClient.onConnectionLost = (response) => {\r\n                console.error(\"Соединение потеряно:\", response.errorMessage);\r\n                showNotification(\"Потеряно соединение с MQTT\", \"error\");\r\n            };\r\n\r\n            mqttClient.connect({\r\n                onSuccess: () => {\r\n                    console.log(\"Успешное подключение к MQTT\");\r\n                    showNotification(\"Подключено к MQTT\", \"success\");\r\n                    startPublishing();\r\n                },\r\n                onFailure: (err) => {\r\n                    console.error(\"Ошибка подключения:\", err);\r\n                    showNotification(\"Ошибка подключения к MQTT\", \"error\");\r\n                },\r\n            });\r\n        }\r\n\r\n        function startPublishing() {\r\n                if (intercomData && mqttClient && mqttClient.isConnected()) {\r\n                    const message = new Paho.MQTT.Message(\r\n                        JSON.stringify(intercomData)\r\n                    );\r\n                    message.destinationName = mqttConfig.topic;\r\n                    mqttClient.send(message);\r\n                    showNotification(\"Сообщение о статусе домофона отправлено\", \"success\");\r\n                }\r\n\r\n                publishIntervalId = setInterval(() => {\r\n                    if (intercomData && mqttClient && mqttClient.isConnected()) {\r\n                        const message = new Paho.MQTT.Message(\r\n                            JSON.stringify(intercomData)\r\n                        );\r\n                        message.destinationName = mqttConfig.topic;\r\n                        mqttClient.send(message);\r\n                        showNotification(\"Сообщение о статусе домофона отправлено\", \"success\");\r\n                    }\r\n                }, mqttConfig.interval);\r\n            }\r\n\r\n\r\n        document.addEventListener('DOMContentLoaded', async () => {\r\n            if (!isPahoLoaded()) {\r\n                console.warn('Paho not loaded, trying fallback...');\r\n                await loadPahoFallback();\r\n            }\r\n\r\n            if (isPahoLoaded()) {\r\n                loadInitialIntercomData();\r\n                initMqttClient();\r\n            } else {\r\n                showError();\r\n                document.querySelectorAll('button').forEach(btn => btn.disabled = true);\r\n            }\r\n        });\r\n\r\n        document.addEventListener('DOMContentLoaded', () => {\r\n                const simulateOffBtn = document.querySelector('.power-buttonOFF-sim');\r\n                if (simulateOffBtn) {\r\n                    simulateOffBtn.addEventListener('click', (e) => {\r\n                        e.preventDefault();\r\n                        if (publishIntervalId) {\r\n                            clearInterval(publishIntervalId);\r\n                            publishIntervalId = null;\r\n                            console.log(\"Публикация остановлена — домофон выключен (симуляция)\");\r\n                            showNotification(\"Сигналы домофона отключены\", \"info\");\r\n                        }\r\n                    });\r\n                }\r\n            });\r\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

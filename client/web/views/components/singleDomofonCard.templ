@@ -3,6 +3,7 @@ package components
 import "github.com/rvflash/elapsed"
 import "strconv"
 import "domofonEmulator/client/models"
+import "encoding/json"
 
 
 templ SingleDomofonCard(props models.Intercom) {
@@ -124,13 +125,14 @@ templ SingleDomofonCard(props models.Intercom) {
                      <div class="power-controls">
                     <form hx-encoding="multipart/form-data" hx-post="/api/powerIntercom" hx-target="#notification-area"
                         hx-target-error="#notification-area" hx-trigger="submit" hx-swap="innerHTML" enctype="multipart/form-data"
-                        hx-on::after-request="if(event.detail.successful) this.reset()" class="control-form">
+                        hx-on::after-request="if(event.detail.successful) { this.reset(); handlePowerToggle(event); }" class="control-form">
                         if props.IntercomStatus == true {
                             <input type="hidden" name="action" value="off" >
                         }
                         if props.IntercomStatus == false {
                             <input type="hidden" name="action" value="on">
                         }
+                        <div class="power-button-wrapper">
                         <button type="submit" class={ templ.KV("control-button power-buttonON", props.IntercomStatus==true ),
                             templ.KV("control-button power-buttonOFF", props.IntercomStatus !=true)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -143,18 +145,10 @@ templ SingleDomofonCard(props models.Intercom) {
                             <span>Включить⁣⁣⁣ ⁣⁣⁣⁣</span>
                             }
                         </button>
-                    </form>
-                
-                    <form action="/domofon/delete" method="post" class="control-form delete-form">
-                        <input type="hidden" name="domofon_id" value={ strconv.Itoa(props.ID) }>
-                        <button type="submit" class="control-button delete-button" title="Удалить домофон">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                        </button>
+                        </div>
                     </form>
                 </div>
-                <div>
+                <div class="simulate-button-wrapper">
                     if props.IntercomStatus == true {
                     {{ simulationClass := "control-button power-buttonOFF-sim" }}
                     <input type="hidden" name="action" value="off">
@@ -162,10 +156,13 @@ templ SingleDomofonCard(props models.Intercom) {
                         <span>Симулировать выключение</span>
                     </button>
                     }
-                    if props.IntercomStatus == false {
-                    }
                 </div>
             </div>
+
+            {{ jsonData, err := json.Marshal(props) }}
+            if err == nil {
+            <div id="intercom-data" data-intercom={string(jsonData)} style="display:none;"></div>
+            }
             
         </div>
         
@@ -204,6 +201,19 @@ templ phoneIcon(active bool) {
 
 templ ControlButtonStyle() {
     <style>
+        .simulate-button-wrapper{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 308px;
+        }
+
+        .power-button-wrapper{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 308px;
+        }
         .power-controls {
         display: flex;
         gap: 6px;
@@ -352,11 +362,13 @@ templ ControlButtonStyle() {
         }
     
         .power-buttonOFF {
+            width: 100%;
             background-color: #4caf50;
             color: white;
         }
 
         .power-buttonON {
+            width: 100%;
             background-color: #ff5252;
             color: white;
         }
@@ -369,13 +381,16 @@ templ ControlButtonStyle() {
         }
 
         .power-buttonOFF-sim{
+            width: 100%;
             background-color: #ff8800;
             color: white;
         }
         .power-buttonOFF-sim:hover{
+
             background-color: #d58319;
             color: white;
         }
+
     </style>
 }
 

@@ -14,7 +14,7 @@ import (
 )
 
 type SessionStorage struct {
-	store *session.Store
+	Store *session.Store
 }
 
 func NewRedisStorage(config config.RedisConfig) *SessionStorage {
@@ -28,7 +28,7 @@ func NewRedisStorage(config config.RedisConfig) *SessionStorage {
 	})
 
 	return &SessionStorage{
-		store: session.New(session.Config{
+		Store: session.New(session.Config{
 			Storage:    redisStore,
 			Expiration: 24 * time.Hour,
 			KeyLookup:  "cookie:session_id",
@@ -38,7 +38,7 @@ func NewRedisStorage(config config.RedisConfig) *SessionStorage {
 }
 
 func (s *SessionStorage) GetSession(c *fiber.Ctx) (*session.Session, error) {
-	return s.store.Get(c)
+	return s.Store.Get(c)
 }
 
 func (s *SessionStorage) SaveSession(sess *session.Session) error {
@@ -80,5 +80,3 @@ func (s *SessionStorage) SetActiveIntercomData(c *fiber.Ctx, intercom models.Int
 	}
 	return nil
 }
-
-
