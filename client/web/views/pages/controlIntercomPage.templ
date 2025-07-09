@@ -115,6 +115,93 @@ templ ControlInetcomPageStyle() {
 }
 
 templ ControlIntercomScript(props models.Intercom) {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const intercomDataElem = document.getElementById("intercom-data");
+            if (!intercomDataElem) return;
+
+            const intercom = JSON.parse(intercomDataElem.dataset.intercom);
+            const intercomID = intercom.id;
+            let isDoorOpen = localStorage.getItem('doorOpen') === 'true';
+
+            const overlay = document.createElement('div');
+            overlay.id = 'door-status-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = 0;
+            overlay.style.left = 0;
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            overlay.style.zIndex = '9999';
+            overlay.style.display = isDoorOpen ? 'flex' : 'none';
+            overlay.style.justifyContent = 'center';
+            overlay.style.alignItems = 'center';
+            overlay.innerHTML = `
+                <div style="
+                    background-color: white;
+                    padding: 32px 48px;
+                    border-radius: 12px;
+                    text-align: center;
+                    font-size: 20px;
+                    color: #ff4d4f;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                ">
+                    Дверь открыта с удаленного сервера. Дождитесь закрытия двери оператором.
+                    <br><br>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            if (isDoorOpen) {
+                document.querySelectorAll('button, input, select, textarea, a').forEach(el => {
+                    el.style.pointerEvents = 'none';
+                });
+            }
+
+            const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+            const socket = new WebSocket(`${protocol}://${location.host}/ws/intercom/${intercomID}`);
+
+            socket.onopen = () => {
+                console.log(`WebSocket открыт для интеркома ${intercomID}`);
+            };
+
+            socket.onmessage = (event) => {
+                console.log("Получено сообщение WebSocket:", event.data);
+                try {
+                    const data = JSON.parse(event.data);
+
+                    if (data.door_status === true) {
+                        isDoorOpen = true;
+                        localStorage.setItem('doorOpen', 'true');
+                        overlay.style.display = 'flex';
+                        document.querySelectorAll('button, input, select, textarea, a').forEach(el => {
+                            el.style.pointerEvents = 'none';
+                        });
+                    } else if (data.door_status === false) {
+                        isDoorOpen = false;
+                        localStorage.removeItem('doorOpen');
+                        overlay.style.display = 'none';
+                        document.querySelectorAll('button, input, select, textarea, a').forEach(el => {
+                            el.style.pointerEvents = '';
+                        });
+                    }
+
+                } catch (e) {
+                    console.error("Ошибка парсинга ws", e);
+                }
+            };
+
+            socket.onerror = (error) => {
+                console.error("Ошибка ws:", error);
+            };
+
+            socket.onclose = () => {
+                console.log("ws закрыт");
+            };
+        });
+    </script>
+
+
     {{ jsonData, err := json.Marshal(props) }}
     if err == nil {
     <div id="intercom-data" data-intercom={ string(jsonData) } style="display:none;"></div>

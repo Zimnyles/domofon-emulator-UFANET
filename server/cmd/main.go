@@ -7,8 +7,10 @@ import (
 	"domofonEmulator/pkg/logger"
 	"domofonEmulator/pkg/middleware"
 	"domofonEmulator/pkg/session"
-	"domofonEmulator/server/internal/auth"
-	"domofonEmulator/server/internal/home"
+	"domofonEmulator/server/internal/api"
+	auth "domofonEmulator/server/internal/authHandler"
+	intercom "domofonEmulator/server/internal/intercomHandler"
+	mainhandler "domofonEmulator/server/internal/mainHandler"
 	mqttserver "domofonEmulator/server/mqttServer"
 
 	"github.com/gofiber/contrib/fiberzerolog"
@@ -55,22 +57,29 @@ func main() {
 	serverApp.Use(middleware.AuthMiddleware(store))
 
 	//Repositories
-	homeRepository := home.NewHomeRepository(databasePool, logger)
 	authRepository := auth.NewAuthRepository(databasePool, logger)
+	intercomRepository := intercom.NewIntercomRepository(databasePool, logger)
+	mainRepository := mainhandler.NewMainRepository(databasePool, logger)
+	apiRepository := api.NewApiRepository(databasePool, logger)
 
 	//Services
-	homeService := home.NewHomeService(logger, *mqttServer)
 	authService := auth.NewAuthService(logger, *mqttServer, authRepository)
+	intercomService := intercom.NewIntercomService(logger, *mqttServer, intercomRepository)
+	mainService := mainhandler.NewMainService(logger, *mqttServer, intercomRepository)
+	apiService := api.NewApiService(logger, *mqttServer, apiRepository)
 
 	//Hadlers
-	home.NewHandler(serverApp, logger, *mqttServer, homeService, homeRepository, store)
 	auth.NewHandler(serverApp, logger, *mqttServer, authService, authRepository, store)
+	intercom.NewHandler(serverApp, logger, *mqttServer, intercomService, intercomRepository, store)
+	mainhandler.NewHandler(serverApp, logger, *mqttServer, mainService, mainRepository, store)
+	api.NewHandler(serverApp, logger, *mqttServer, apiService)
 
 	go mqttServer.ListenForIntercomCreations(context.Background())
 	go mqttServer.ListenForIntercomConnections(context.Background())
 	go mqttServer.ListenForIntercomPowerOnOff(context.Background())
 	go mqttServer.ListenForDoorControl(context.Background())
 	go mqttServer.ListenForCalls(context.Background())
+	go mqttServer.MonitorIntercomStatus(context.Background())
 
 	serverApp.Listen(":3031")
 }

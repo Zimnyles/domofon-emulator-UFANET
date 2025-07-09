@@ -47,7 +47,7 @@ MetaDescription: "Регистрация в DomofonPanel",
             </form>
 
             <div class="login-footer">
-                <a href="/login" class="link">Уже есть аккаунт? Войти</a>
+                <a href="/login" class="link">Войти</a>
             </div>
         </div>
     </div>
@@ -58,9 +58,10 @@ MetaDescription: "Регистрация в DomofonPanel",
 templ RegisterPageStyle() {
 <style>
     * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: inherit;
     }
 
     body {
@@ -83,11 +84,6 @@ templ RegisterPageStyle() {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         padding: 30px;
         transition: transform 0.3s ease;
-    }
-
-    .login-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
     }
 
     .login-header {

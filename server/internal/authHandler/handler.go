@@ -7,6 +7,7 @@ import (
 	"domofonEmulator/server/web/views/components"
 	"domofonEmulator/server/web/views/pages"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,6 +28,7 @@ type IAuthRepository interface {
 	IsEmailExists(email string) (bool, error)
 	AddUser(form models.CreateUserCredential, logger *zerolog.Logger) (bool, error)
 	GetPasswordByLogin(login string) (string, error)
+	GetIntercomByID(id int, logger *zerolog.Logger) (models.Intercom, error)
 }
 
 type IAuthService interface {
@@ -50,6 +52,23 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, mqttServer mqttserv
 	h.router.Post("/api/login", h.apiLogin)
 	h.router.Post("/api/register", h.apiRegister)
 
+	router.Get("/live/intercom/:id", h.HandleLiveIntercomPage)
+
+}
+
+func (h *AuthHandler) HandleLiveIntercomPage(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(400).SendString("Invalid intercom ID")
+	}
+
+	intercom, err := h.repository.GetIntercomByID(id, h.logger)
+	if err != nil {
+		return c.Status(404).SendString("Intercom not found")
+	}
+
+	component := pages.LiveIntercomPage(intercom)
+	return tadapter.Render(c, component, fiber.StatusOK)
 }
 
 func (h *AuthHandler) login(c *fiber.Ctx) error {
@@ -80,7 +99,7 @@ func (h *AuthHandler) apiLogin(c *fiber.Ctx) error {
 			h.logger.Fatal().Err(err).Msg("Failed to set user session")
 			panic(err)
 		}
-		c.Response().Header.Add("Hx-Redirect", "/")
+		c.Response().Header.Add("Hx-Redirect", "/connect")
 		return c.Redirect("/", http.StatusOK)
 	}
 	component := components.Notification(msg, false)
@@ -107,7 +126,7 @@ func (h *AuthHandler) apiRegister(c *fiber.Ctx) error {
 			h.logger.Fatal().Err(err).Msg("Failed to set user session")
 			panic(err)
 		}
-		c.Response().Header.Add("Hx-Redirect", "/")
+		c.Response().Header.Add("Hx-Redirect", "/connect")
 		return c.Redirect("/", http.StatusOK)
 	}
 	component := components.Notification(msg, false)

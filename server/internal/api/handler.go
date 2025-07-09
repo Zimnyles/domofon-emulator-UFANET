@@ -1,158 +1,115 @@
 package api
 
-// import (
-// 	"domofonEmulator/client/web/views/components"
-// 	"domofonEmulator/pkg/tadapter"
-// 	mqttserver "domofonEmulator/server/mqttServer"
-// 	"encoding/json"
-// 	"fmt"
-// 	"strconv"
-// 	"time"
+import (
+	"domofonEmulator/pkg/tadapter"
+	"domofonEmulator/server/models"
+	mqttserver "domofonEmulator/server/mqttServer"
+	"domofonEmulator/server/web/views/components"
+	"strconv"
 
-// 	"github.com/gofiber/fiber/v2"
-// 	"github.com/rs/zerolog"
-// )
+	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog"
+)
 
-// type ApiHandler struct {
-// 	router     fiber.Router
-// 	logger     *zerolog.Logger
-// 	mqqtServer mqttserver.Server
-// 	apiService IApiService
-// }
+type ApiHandler struct {
+	router     fiber.Router
+	logger     *zerolog.Logger
+	mqqtServer mqttserver.Server
+	apiService IApiService
+}
 
-// type IApiService interface {
-// 	NewIntercom(mac string, adress string, numofapartments int, topic string) error
-// }
+type IApiService interface {
+	CreateNewIntercom(mac, address string, apartments int) (int, bool, error)
+	SendActualData(intercomData models.Intercom) error
+	GetIntercomDataById(id int) (models.Intercom, error)
+	SetIntercomDoorOpened(id int) error
+	SetIntercomDoorClose(id int) error
+}
 
-// func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtServer mqttserver.Server, apiService IApiService) {
-// 	h := &ApiHandler{
-// 		router:     router,
-// 		logger:     logger,
-// 		mqqtServer: mqqtServer,
-// 		apiService: apiService,
-// 	}
+type IApiRepository interface {
+	CreateNewIntercom(mac, address string, apartments int) (int, bool, error)
+	GetIntercomById(id int) (models.Intercom, error)
+	SetIntercomDoorOpened(id int) error
+	SetIntercomDoorClose(id int) error
+}
 
-// 	// h.router.Post("/api/connect", h.connectIntercom)
-// 	h.router.Post("/api/createIntercom", h.apiCreateIntercom)
+func NewHandler(router fiber.Router, logger *zerolog.Logger, mqqtServer mqttserver.Server, apiService IApiService) {
+	h := &ApiHandler{
+		router:     router,
+		logger:     logger,
+		mqqtServer: mqqtServer,
+		apiService: apiService,
+	}
 
-// }
+	h.router.Post("/api/createIntercom", h.apiCreateIntercom)
+	h.router.Post("/api/opendoorIntercom", h.apiOpenIntercomDoor)
+	h.router.Post("/api/closedoorIntercom", h.apiCloseIntercomDoor)
 
-// type ConnectRequest struct {
-// 	MAC        string `json:"mac"`
-// 	Address    string `json:"address"`
-// 	Apartments int    `json:"apartments"`
-// }
+}
 
-// type IntercomResponse struct {
-// 	Success bool   `json:"success"`
-// 	Message string `json:"message"`
-// 	Data    any    `json:"data,omitempty"`
-// }
+func (h *ApiHandler) apiCloseIntercomDoor(c *fiber.Ctx) error {
+	intercomID, _ := strconv.Atoi(c.FormValue("intercom_id"))
+	err := h.apiService.SetIntercomDoorClose(intercomID)
+	if err != nil {
+		h.logger.Err(err)
+	}
+	intercomData, _ := h.apiService.GetIntercomDataById(intercomID)
 
-// func (h *ApiHandler) apiCreateIntercom(c *fiber.Ctx) error {
-// 	mac := c.FormValue("mac")
-// 	address := c.FormValue("address")
-// 	apartmentsString := c.FormValue("apartments")
-// 	apartments, _ := strconv.Atoi(apartmentsString)
+	h.apiService.SendActualData(intercomData)
+	return nil
+}
 
-// 	responseChan := make(chan struct {
-// 		success bool
-// 		message string
-// 		mac     string
-// 	})
-// 	defer close(responseChan)
+func (h *ApiHandler) apiOpenIntercomDoor(c *fiber.Ctx) error {
+	intercomID, _ := strconv.Atoi(c.FormValue("intercom_id"))
+	err := h.apiService.SetIntercomDoorOpened(intercomID)
+	if err != nil {
+		h.logger.Err(err)
+	}
+	intercomData, _ := h.apiService.GetIntercomDataById(intercomID)
 
-// 	responseTopic := "intercom/create/response/" + mac
-// 	err := h.mqqtServer.Subscribe(responseTopic, func(payload []byte) {
-// 		var response struct {
-// 			Success bool   `json:"success"`
-// 			Message string `json:"message"`
-// 			Mac     string `json:"mac"`
-// 		}
-// 		if err := json.Unmarshal(payload, &response); err != nil {
-// 			responseChan <- struct {
-// 				success bool
-// 				message string
-// 				mac     string
-// 			}{false, "Ошибка обработки ответа сервера", ""}
-// 			return
-// 		}
-// 		responseChan <- struct {
-// 			success bool
-// 			message string
-// 			mac     string
-// 		}{response.Success, response.Message, response.Mac}
-// 	})
+	h.apiService.SendActualData(intercomData)
+	return nil
+}
 
-// 	if err != nil {
-// 		h.logger.Error().Err(err).Msg("Failed to subscribe to MQTT topic")
-// 		component := components.NewIntercomResponse("Ошибка подключения к MQTT")
-// 		return tadapter.Render(c, component, fiber.StatusOK)
-// 	}
+func (h *ApiHandler) apiCreateIntercom(c *fiber.Ctx) error {
+	mac := c.FormValue("mac")
+	address := c.FormValue("address")
+	apartments, _ := strconv.Atoi(c.FormValue("apartments"))
 
-// 	err = h.apiService.NewIntercom(mac, address, apartments, "intercom/create")
-// 	if err != nil {
-// 		h.logger.Fatal().Err(err).Msg("Failed to create new intercom")
-// 		component := components.NewIntercomResponse("Не удалось отправить запрос на сервер")
-// 		return tadapter.Render(c, component, fiber.StatusOK)
-// 	} else {
-// 		h.logger.Info().
-// 			Str("mac", mac).
-// 			Str("address", address).
-// 			Int("apartments", apartments).
-// 			Str("mqtt_topic", "intercom/create").
-// 			Msg("New domofon registered in system via MQTT")
-// 	}
-// 	select {
-// 	case response := <-responseChan:
-// 		if response.success {
-// 			component := components.NewIntercomResponse("Домофон успешно создан: " + response.message)
-// 			return tadapter.Render(c, component, fiber.StatusOK)
-// 		} else {
-// 			component := components.NewIntercomResponse("Ошибка: " + response.message)
-// 			return tadapter.Render(c, component, fiber.StatusOK)
-// 		}
-// 	case <-time.After(30 * time.Second):
-// 		component := components.NewIntercomResponse("Превышено время ожидания ответа от сервера")
-// 		return tadapter.Render(c, component, fiber.StatusOK)
-// 	}
-// }
+	if len(mac) > 17 {
+		component := components.NewIntercomResponse("Длина MAC адреса не может превышать 17 символов!")
+		return tadapter.Render(c, component, fiber.StatusOK)
+	}
+	if apartments > 3800 {
+		component := components.NewIntercomResponse("Количество квартир не может превышать 3800!")
+		return tadapter.Render(c, component, fiber.StatusOK)
+	}
+	if len(address) > 100 {
+		component := components.NewIntercomResponse("Адрес не может первышать 100 символов!")
+		return tadapter.Render(c, component, fiber.StatusOK)
+	}
 
-// func (h *ApiHandler) HandleIntercomAction(c *fiber.Ctx, action string) error {
-// 	var req ConnectRequest
-// 	if err := c.BodyParser(&req); err != nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(IntercomResponse{
-// 			Success: false,
-// 			Message: "Invalid request format",
-// 		})
-// 	}
+	intercomId, isNew, err := h.apiService.CreateNewIntercom(mac, address, apartments)
 
-// 	payload := map[string]interface{}{
-// 		"action":     action,
-// 		"mac":        req.MAC,
-// 		"address":    req.Address,
-// 		"apartments": req.Apartments,
-// 	}
+	if err != nil {
+		h.logger.Info().
+			Msg("Intercom mac is registered on the server")
+		message := "Произошла неизвестная ошибка. Обратитесь к системному администратору"
+		component := components.NewIntercomResponse(message)
+		return tadapter.Render(c, component, fiber.StatusOK)
+	} else {
+		h.logger.Info().
+			Msg("Intercom msc is not registered on the server")
+	}
 
-// 	jsonData, err := json.Marshal(payload)
-// 	if err != nil {
-// 		h.logger.Error().Err(err).Msg("Failed to marshal payload")
-// 		return c.Status(fiber.StatusInternalServerError).JSON(IntercomResponse{
-// 			Success: false,
-// 			Message: "Internal server error",
-// 		})
-// 	}
+	if !isNew {
+		message := "Домофон с таким MAC адресом уже существует (ID: " + strconv.Itoa(intercomId) + "). Используйте ID для подключния к устройству на главной странице"
+		component := components.NewIntercomResponse(message)
+		return tadapter.Render(c, component, fiber.StatusOK)
+	}
 
-// 	if err := h.mqttServer.Publish("doorphones/"+action, jsonData); err != nil {
-// 		h.logger.Error().Err(err).Msg("Failed to send MQTT message")
-// 		return c.Status(fiber.StatusInternalServerError).JSON(IntercomResponse{
-// 			Success: false,
-// 			Message: "Failed to send request",
-// 		})
-// 	}
+	message := "Домофон успешно создан (ID: " + strconv.Itoa(intercomId) + "). Используйте ID для подключния к устройству на главной странице"
 
-// 	return c.JSON(IntercomResponse{
-// 		Success: true,
-// 		Message: fmt.Sprintf("%s request sent", action),
-// 	})
-// }
+	component := components.NewIntercomResponse(message)
+	return tadapter.Render(c, component, fiber.StatusOK)
+}

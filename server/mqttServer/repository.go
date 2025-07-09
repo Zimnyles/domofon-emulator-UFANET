@@ -77,15 +77,16 @@ func (r *MqttServerRepository) UpdateIntercomStatus(id int, status bool) error {
 	return nil
 }
 
-func (r *MqttServerRepository) UpdateIntercomDoorStatus(id int, status bool) error {
+func (r *MqttServerRepository) UpdateIntercomDoorStatus(id int, status bool, apartment int) error {
 	query := `
         UPDATE intercoms 
         SET 
             door_status = $1,
+			openeddoorapartment = $3,
             updated_at = NOW()
         WHERE id = $2
     `
-	result, err := r.Dbpool.Exec(context.Background(), query, status, id)
+	result, err := r.Dbpool.Exec(context.Background(), query, status, id, apartment)
 	if err != nil {
 		return fmt.Errorf("failed to execute update query: %w", err)
 	}
@@ -96,15 +97,37 @@ func (r *MqttServerRepository) UpdateIntercomDoorStatus(id int, status bool) err
 	return nil
 }
 
-func (r *MqttServerRepository) UpdateCallStatus(id int, status bool) error {
+func (r *MqttServerRepository) UpdateIntercomActiveStatus(id int, isActive bool) error {
+	query := `
+        UPDATE intercoms 
+        SET 
+            is_active = $1,
+            updated_at = NOW()
+        WHERE id = $2
+    `
+	result, err := r.Dbpool.Exec(context.Background(), query, isActive, id)
+	if err != nil {
+		return fmt.Errorf("failed to execute update query: %w", err)
+	}
+
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("no intercom found with id %d", id)
+	}
+
+	return nil
+}
+
+func (r *MqttServerRepository) UpdateCallStatus(id int, status bool, apartment int) error {
 	query := `
         UPDATE intercoms 
         SET 
             is_calling = $1,
+			calledapartment = $3,
             updated_at = NOW()
         WHERE id = $2
     `
-	result, err := r.Dbpool.Exec(context.Background(), query, status, id)
+	result, err := r.Dbpool.Exec(context.Background(), query, status, id, apartment)
 	if err != nil {
 		return fmt.Errorf("failed to execute update query: %w", err)
 	}
@@ -126,7 +149,10 @@ func (r *MqttServerRepository) GetIntercomByID(id int, logger *zerolog.Logger) (
             number_of_apartments,
             is_calling,
             created_at,
-            updated_at
+            updated_at,
+			calledapartment,
+			openeddoorapartment,
+			is_active
         FROM intercoms
         WHERE id = $1
     `
@@ -145,6 +171,9 @@ func (r *MqttServerRepository) GetIntercomByID(id int, logger *zerolog.Logger) (
 		&intercom.IsCalling,
 		&intercom.CreatedAt,
 		&intercom.UpdatedAt,
+		&intercom.CalledApartment,
+		&intercom.OpenedDoorApartment,
+		&intercom.IsActive,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

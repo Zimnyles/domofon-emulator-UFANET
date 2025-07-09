@@ -1,0 +1,29 @@
+package components
+
+templ NewIntercomResponse(msg string) {
+    @NewIntercomResponseStyle()
+    <div class="response-newintercom">
+        <span> { msg } </span>
+    </div>
+}
+
+templ NewIntercomResponseStyle() {
+    <style>
+        .response-newintercom{
+            margin-top: 15px;
+            background-color: rgb(59, 59, 59);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            max-width: 386px;
+        }
+
+        .htmx-swapping .response-newintercom{
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+        }
+    </style>
+}

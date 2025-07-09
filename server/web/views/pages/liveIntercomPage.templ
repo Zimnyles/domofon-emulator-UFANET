@@ -1,0 +1,530 @@
+package pages
+
+import (
+"domofonEmulator/server/models"
+"domofonEmulator/server/web/views/layout"
+
+)
+
+templ LiveIntercomPage(intercom models.Intercom) {
+@layout.Layout(layout.LayoutProps{
+Title: "Онлайн контроль домофона",
+MetaDescription: "Онлайн контроль домофона",
+}){
+<main class="live-intercom-container">
+    @LiveIntercomStyles()
+    {{ login := ctx.Value("login").(string) }}
+    <div class="header-login"><span>Добрый день, { login }!</span></div>
+    <div class="header">
+        <h1>Вы управляете домофоном ID:{ intercom.ID }</h1>
+        <div class="connection-status" id="connection-status">
+            <span class="status-dot"></span>
+            <span class="status-text">Подключение...</span>
+        </div>
+    </div>
+    <div class="intercom-data" id="intercom-data">
+        @IntercomInfoCard(intercom)
+    </div>
+    <div class="text-info-wrapper">
+        <p>Каждый раз, когда домофон изменяет свое состояние, он отпровляет свои данные на сервер. <span style="color: green;">Данные актуальны и обновляются в реальном времени!</span> </p>
+    </div>
+    <div class="intercom-data" id="intercom-data">
+        @IntercomActualStatusCard(intercom)
+    </div>
+    <div class="text-info-wrapper">
+        <p>Домофон отправляет данные о себе раз в 30 секунд. Ниже представлены данные, отправленные домофоном в последний раз.</p>
+        <p>Если домофон не выходит на связь более 2х минут, то он помечается как неактивный. <span style="color: red;">Будьте аккуратны, данные могут быть неактуальны!</span></p>
+    </div>
+    <div class="intercom-data" id="intercom-data">
+        @IntercomStatusCard(intercom)
+    </div>
+    <div class="notification-area" id="notification-area"></div>
+    @MqttClientScript(intercom)
+</main>
+}
+}
+
+templ IntercomInfoCard(intercom models.Intercom) {
+<div class="info-card">
+    <div class="status-row">
+        <span class="label">Адрес:</span>
+        <span class="value" id="address-status">{ intercom.Address }</span>
+    </div>
+    <div class="status-row">
+        {{ createdAt := intercom.CreatedAt }}
+        {{ createdAtStr := createdAt.Format("2006-01-02 15:04:05") }}
+        <span class="label">Создан:</span>
+        <span class="value" id="created-status">{ createdAtStr }</span>
+    </div>
+    <div class="status-row">
+        {{ updatedAt := intercom.UpdatedAt }}
+        {{ updatedAtStr := updatedAt.Format("2006-01-02 15:04:05") }}
+        <span class="label">Обновлен:</span>
+        <span class="value" id="update-status">{ updatedAtStr }</span>
+    </div>
+    <div class="status-row">
+        <span class="label">MAC:</span>
+        <span class="value" id="mac-address">{ intercom.MAC }</span>
+    </div>
+</div>
+}
+
+templ IntercomActualStatusCard(intercom models.Intercom) {
+<div class="status-card">
+    <div class="status-row">
+        <span class="label">Состояние:</span>
+        if intercom.IntercomStatus {
+        <span class="value-on" id="intercom-status-main">Включен</span>
+        } else {
+        <span class="value-off" id="intercom-status-main">Выключен</span>
+        }
+    </div>
+    <div class="status-row">
+        <span class="label">Дверь:</span>
+        if intercom.DoorStatus {
+        <span class="value-on" id="door-status-main">Открыта</span>
+        } else {
+        <span class="value-off" id="door-status-main">Закрыта</span>
+        }
+    </div>
+    <div class="status-row">
+        <span class="label">Вызов:</span>
+        if intercom.IsCalling {
+        <span class="value-on" id="call-status-main">Активен</span>
+        } else {
+        <span class="value-off" id="call-status-main">Нет</span>
+        }
+    </div>
+</div>
+
+<div class="status-card">
+    <div class="status-row">
+        <span class="label"></span>
+        if intercom.IntercomStatus {
+        <span class="value-on" id="intercom-status-extra"></span>
+        } else {
+        <span class="value-off" id="intercom-status-extra"></span>
+        }
+    </div>
+    <div class="status-row">
+        <span class="label">Ключ от квартиры:</span>
+        if intercom.DoorStatus {
+        <span class="value-on" id="doorkey-status-extra">{ intercom.OpenedDoorApartment }</span>
+        } else {
+        <span class="value-off" id="doorkey-status-extra">Закрыта</span>
+        }
+    </div>
+    <div class="status-row">
+        <span class="label">Звонок в квартиру:</span>
+        if intercom.IsCalling {
+        <span class="value-on" id="callkey-status-extra">{ intercom.CalledApartment }</span>
+        } else {
+        <span class="value-off" id="callkey-status-extra">Нет</span>
+        }
+    </div>
+</div>
+
+<div class="action-buttons-wrapper">
+<div class="action-buttons">
+    <form hx-post="/api/opendoorIntercom"
+    hx-target="#intercom-response-container"
+    hx-swap="innerHTML"
+    style="display: inline;">
+        <input type="hidden" name="intercom_id" value={ intercom.ID }>
+        <button type="submit" class="open-button">
+            <img width="16" height="16" class="dooricon" src="/server/web/static/icons/door.svg" alt="Открыть" />
+            Открыть дверь
+        </button>
+    </form>
+</div>
+<div class="action-buttons">
+    <form hx-post="/api/closedoorIntercom" hx-target="#intercom-response-container" hx-swap="innerHTML"
+        style="display: inline;">
+        <input type="hidden" name="intercom_id" value={ intercom.ID }>
+        <button type="submit" class="off-button">
+            <img width="16" height="16" class="dooricon" src="/server/web/static/icons/door.svg" alt="Открыть" />
+            Закрыть дверь
+        </button>
+    </form>
+</div>
+<div id="intercom-response-container"></div>
+</div>
+
+
+}
+
+templ IntercomStatusCard(intercom models.Intercom) {
+<div class="status-card">
+    <div class="status-row">
+        if intercom.IntercomStatus == true {
+            <span class="label">Состояние:</span>
+            <span class="value-on" id="intercom-status">Включен</span>
+        } else {
+            <span class="label">Состояние:</span>
+            <span class="value-off" id="intercom-status">Выключен</span>
+        }
+        
+    </div>
+    <div class="status-row">
+        if intercom.DoorStatus == true {
+        <span class="label">Дверь:</span>
+        <span class="value-on" id="door-status">Открыта</span>
+        } else {
+        <span class="label">Дверь:</span>
+        <span class="value-off" id="door-status">Закрыта</span>
+        }
+        
+    </div>
+    <div class="status-row">
+        if intercom.IsCalling == true {
+        <span class="label">Вызов:</span>
+        <span class="value-on" id="call-status">Активен</span>
+        } else {
+        <span class="label">Вызов:</span>
+        <span class="value-off" id="call-status">Нет</span>
+        }
+        
+    </div>
+</div>
+<div class="status-row">
+    if intercom.IsActive == true {
+    <span class="label">Активность:</span>
+    <span class="value-on" id="intercomactive-status">Активен</span>
+    } else {
+    <span class="label">Активность:</span>
+    <span class="value-off" id="intercomactive-status">Неактивен</span>
+    }
+
+</div>
+}
+
+templ MqttClientScript(intercom models.Intercom) {
+
+<script>
+        const intercomID = {{ intercom.ID }};
+
+        const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsBase = `${wsProtocol}://${window.location.host}`;
+
+        const statusSocket = new WebSocket(`${wsBase}/ws/intercom/${intercomID}`);
+        const actualStatusSocket = new WebSocket(`${wsBase}/ws/intercom/actualstatus/${intercomID}`);
+        const activeStatusSocket = new WebSocket(`${wsBase}/ws/intercom/activestatus/${intercomID}`);
+        activeStatusSocket.onopen = () => {
+                updateConnectionStatus(true);
+                showNotification('Подключено к intercom/activestatus', 'success');
+        };
+        activeStatusSocket.onerror = (error) => {
+                console.error("Ошибка Ws:", error);
+        };
+        activeStatusSocket.onclose = () => {
+                updateConnectionStatus(false);
+                console.warn("intercom/activestatus отключен");
+        };
+        statusSocket.onopen = () => {
+            updateConnectionStatus(true);
+            showNotification('Подключено к intercom/status', 'success');
+        };
+        statusSocket.onclose = () => {
+            updateConnectionStatus(false);
+            showNotification('intercom/status отключен', 'error');
+            setTimeout(() => location.reload(), 5000);
+        };
+        statusSocket.onerror = (error) => console.error("Ошибка WebSocket (status):", error);
+
+        statusSocket.onmessage = function (event) {
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg.status) updateIntercomStatus(msg.status);
+            } catch (e) {
+                console.error("Ошибка разбора данных Ws:", e);
+            }
+        };
+
+        activeStatusSocket.onmessage = function (event) {
+                try {
+                    const msg = JSON.parse(event.data);
+                    console.log("WebSocket message received:", msg);
+                    if (msg.activestatus && typeof msg.activestatus.is_active !== 'undefined') {
+                        updateActiveStatus(msg.activestatus.is_active);
+                        return;
+                    }
+                    if (typeof msg.is_active !== 'undefined') {
+                        updateActiveStatus(msg.is_active);
+                        return;
+                    }
+                    console.warn("Active status not found in message:", msg);
+                } catch (e) {
+                    console.error("Error processing WebSocket message:", e, "Raw data:", event.data);
+                }
+            };
+        function updateActiveStatus(isActive) {
+            const statusEl = document.getElementById('intercomactive-status');
+            if (!statusEl) {
+                console.error("Element 'intercomactive-status' not found");
+                return;
+            }
+            statusEl.textContent = isActive ? 'Активен' : 'Неактивен';
+            statusEl.className = isActive ? 'value-on' : 'value-off';
+            console.log("Active status updated to:", isActive);
+        }
+
+    actualStatusSocket.onopen = () => {
+        showNotification('Подключено к intercom/actualstatus', 'success');
+    };
+    actualStatusSocket.onclose = () => {
+        showNotification('intercom/actualstatus отключен', 'error');
+    };
+    actualStatusSocket.onerror = (error) => console.error("Ошибка Ws:", error);
+
+    actualStatusSocket.onmessage = function (event) {
+        try {
+            const msg = JSON.parse(event.data);
+
+            if (msg.actualstatus) updateIntercomActualStatus(msg.actualstatus);
+        } catch (e) {
+            console.error("Ошибка Ws:", e);
+        }
+    };
+
+    function updateIntercomStatus(data) {
+        console.log("Получено сообщение:", msg);
+        const intercomEl = document.getElementById('intercom-status');
+        intercomEl.textContent = data.intercom_status === true ? 'Включен' : 'Выключен';
+        intercomEl.style.color = data.intercom_status === true ? 'green' : 'red';
+
+        const doorEl = document.getElementById('door-status');
+        doorEl.textContent = data.door_status === true ? 'Открыта' : 'Закрыта';
+        doorEl.style.color = data.door_status === true ? 'green' : 'red';
+
+        const callEl = document.getElementById('call-status');
+        callEl.textContent = data.is_calling === true ? 'Активен' : 'Нет';
+        callEl.style.color = data.is_calling === true ? 'green' : 'red';
+
+        const updatedAtEl = document.getElementById('update-status');
+        if (data.updated_at) {
+            const date = new Date(data.updated_at);
+            const formatted = date.toLocaleString('ru-RU', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            updatedAtEl.textContent = formatted;
+        } else {
+            updatedAtEl.textContent = '';
+        }
+
+        document.getElementById('mac-address').textContent = data.mac_address || '';
+    }
+
+    function updateIntercomActualStatus(data) {
+        
+            document.getElementById("intercom-status-main").className = data.intercom_status ? "value-on" : "value-off";
+            document.getElementById("intercom-status-main").textContent = data.intercom_status ? "Включен" : "Выключен";
+
+            document.getElementById("door-status-main").className = data.door_status ? "value-on" : "value-off";
+            document.getElementById("door-status-main").textContent = data.door_status ? "Открыта" : "Закрыта";
+
+            document.getElementById("call-status-main").className = data.is_calling ? "value-on" : "value-off";
+            document.getElementById("call-status-main").textContent = data.is_calling ? "Активен" : "Нет";
+
+            document.getElementById("doorkey-status-extra").className = data.door_status ? "value-on" : "value-off";
+            document.getElementById("doorkey-status-extra").textContent = data.door_status ? data.OpenedDoorApartment : "Закрыта";
+
+            document.getElementById("callkey-status-extra").className = data.is_calling ? "value-on" : "value-off";
+            document.getElementById("callkey-status-extra").textContent = data.is_calling ? data.CalledApartment : "Нет";
+        }
+    function updateConnectionStatus(isConnected) {
+        const statusElem = document.getElementById('connection-status');
+        const dotElem = statusElem.querySelector('.status-dot');
+        const textElem = statusElem.querySelector('.status-text');
+
+        if (isConnected) {
+            dotElem.style.backgroundColor = '#4CAF50';
+            textElem.textContent = 'Подключено';
+        } else {
+            dotElem.style.backgroundColor = '#F44336';
+            textElem.textContent = 'Отключено';
+        }
+    }
+    function showNotification(message, type) {
+        const container = document.getElementById('notification-area');
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        container.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
+    }
+</script>
+
+
+}
+
+
+templ LiveIntercomStyles() {
+<style>
+    * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    }
+    .action-buttons-wrapper{
+        display: flex;
+        flex-direction: row;
+        margin-left: 10px;
+        justify-content: flex-end;
+    }
+    .action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 15px;
+        margin-left: 10px;
+    }
+    .open-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .off-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background-color: rgb(255, 61, 61);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .off-button:hover{
+        background-color: rgb(212, 53, 53);
+    }
+    .open-button:hover {
+        background-color: #3e8e41;
+    }
+    .live-intercom-container {
+        max-width: 1020px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .text-info-wrapper{
+        margin-top: 15px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+        color: #555;
+    }
+    .header-login{
+        font-size: 0.9rem;
+        color: #555;
+        margin-bottom: 10px;
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #FFC107;
+    }
+
+    .status-text {
+        font-size: 0.9rem;
+        color: #555;
+    }
+
+    .intercom-data {
+        display: flex;
+        flex-direction: column;
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        gap: 10px;
+        margin-bottom: 45px;
+    }
+
+    .status-card {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        
+    }
+
+    .status-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .label {
+        font-weight: 500;
+        color: #666;
+    }
+
+    .value {
+        font-weight: 600;
+    }
+
+    .value-off{
+        font-weight: 600;
+        color: red;
+    }
+
+    .value-on{
+        font-weight: 600;
+        color: green;
+    }
+
+    .notification-area {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 1000;
+    }
+
+    .notification {
+        padding: 12px 16px;
+        border-radius: 4px;
+        color: white;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .notification.success {
+        background: #4CAF50;
+    }
+
+    .notification.error {
+        background: #F44336;
+    }
+</style>
+}

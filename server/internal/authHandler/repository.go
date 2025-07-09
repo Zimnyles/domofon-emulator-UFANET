@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"domofonEmulator/server/models"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -46,6 +48,53 @@ func (r *AuthRepository) IsEmailExists(email string) (bool, error) {
 	return exists, err
 }
 
+func (r *AuthRepository) GetIntercomByID(id int, logger *zerolog.Logger) (models.Intercom, error) {
+	query := `
+        SELECT 
+            id,
+            mac_address,
+            intercom_status,
+            door_status,
+            address,
+            number_of_apartments,
+            is_calling,
+            created_at,
+            updated_at
+        FROM intercoms
+        WHERE id = $1
+    `
+	var intercom models.Intercom
+	err := r.Dbpool.QueryRow(
+		context.Background(),
+		query,
+		id,
+	).Scan(
+		&intercom.ID,
+		&intercom.MAC,
+		&intercom.IntercomStatus,
+		&intercom.DoorStatus,
+		&intercom.Address,
+		&intercom.NumberOfApartments,
+		&intercom.IsCalling,
+		&intercom.CreatedAt,
+		&intercom.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.Intercom{}, nil
+		}
+		if !strings.Contains(err.Error(), "no rows") {
+			logger.Error().
+				Err(err).
+				Int("id", id).
+				Msg("Database error while getting intercom")
+		}
+		return models.Intercom{}, fmt.Errorf("database operation failed")
+	}
+
+	return intercom, nil
+}
+
 func (r *AuthRepository) AddUser(form models.CreateUserCredential, logger *zerolog.Logger) (bool, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -80,15 +129,14 @@ func (r *AuthRepository) GetPasswordByLogin(login string) (string, error) {
         FROM users 
         WHERE login = @login`
 	args := pgx.NamedArgs{
-    	"login": login,
+		"login": login,
 	}
 	row := r.Dbpool.QueryRow(context.Background(), query, args)
 	var userHashedPassword string
 	err := row.Scan(&userHashedPassword)
 	if err != nil {
-    	return "", err		
+		return "", err
 	}
 	return userHashedPassword, nil
 
 }
-

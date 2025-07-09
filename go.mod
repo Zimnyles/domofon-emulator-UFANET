@@ -13,14 +13,16 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fasthttp/session/v2 v2.2.4 // indirect
+	github.com/fasthttp/websocket v1.5.3 // indirect
 	github.com/gofiber/session/v2 v2.0.2 // indirect
 	github.com/gofiber/storage/redis/v2 v2.0.3 // indirect
 	github.com/gofiber/storage/redis/v3 v3.2.0 // indirect
+	github.com/gofiber/websocket/v2 v2.2.1 // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/redis/go-redis/v9 v9.11.0 // indirect
-	github.com/savsgio/dictpool v0.0.0-20200914121634-61efc2e36e16 // indirect
-	github.com/savsgio/gotils v0.0.0-20200909101946-939aa3fc74fb // indirect
+	github.com/savsgio/dictpool v0.0.0-20221023140959-7bf2e61cea94 // indirect
+	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
 	github.com/tinylib/msgp v1.2.5 // indirect
 )
 

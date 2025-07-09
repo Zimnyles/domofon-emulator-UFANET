@@ -26,6 +26,16 @@ func NewAPIService(logger *zerolog.Logger, mqqtClient mqttclient.Client, mqttCon
 	}
 }
 
+func (s *APIService) SendActualData(intercomData models.Intercom) error {
+	topic := fmt.Sprintf("intercom/actualstatus/%d", intercomData.ID)
+
+	if err := s.mqqtClient.Publish(topic, intercomData); err != nil {
+		return fmt.Errorf("ошибка публикации MQTT: %w", err)
+	}
+
+	return nil
+}
+
 func (s *APIService) CallRequest(id int, apartment int) (bool, string, *models.Intercom) {
 	return s.sendCallCommand(id, "call", apartment)
 }

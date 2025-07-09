@@ -1,0 +1,238 @@
+package pages
+
+import "domofonEmulator/server/web/views/layout"
+
+templ CreateIntercomePage() {
+@layout.Layout(layout.LayoutProps{
+Title: "DomofonPanel - Добавление домофона",
+MetaDescription: "Добавление нового домофона в систему",
+}){
+<main>
+    @CreateIntercomePageStyle()
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="header-with-back">
+                    <a href="/connect" class="back-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </a>
+                    <h1>Добавление нового домофона</h1>
+                </div>
+                <img src="/server/web/static/icons/un-logo.png" width="341px" height="173px" alt="doorinactive ico" />
+            </div>
+
+            <form hx-encoding="multipart/form-data" hx-post="/api/createIntercom" hx-target="#notification-area"
+                hx-target-error="#notification-area" hx-trigger="submit" hx-swap="innerHTML" class="login-form"
+                enctype="multipart/form-data" hx-on::after-request="if(event.detail.successful) this.reset()">
+
+                <div class="form-group">
+                    <label for="mac">MAC-адрес:</label>
+                    <div class="mac-group">
+                        <input type="text" id="mac" name="mac" placeholder="XX:XX:XX:XX:XX:XX" required>
+                        <button type="button" class="secondary-button" onclick="generateMAC()">Сгенерировать</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Адрес установки:</label>
+                    <input type="text" id="address" name="address" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="apartments">Количество квартир:</label>
+                    <input type="number" id="apartments" name="apartments" min="1" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="login-button">
+                        Создать домофон
+                    </button>
+                </div>
+            </form>
+            <div id="notification-area"></div>
+        </div>
+    </div>
+</main>
+}
+}
+
+templ CreateIntercomePageStyle() {
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background-color: var(--light-gray);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        transition: transform 0.3s ease;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .header-with-back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        position: relative;
+        padding-left: 40px; 
+    }
+
+    .back-button {
+        color: #4caf50;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s;
+        position: absolute;
+        left: 0;
+        width: 24px;
+        height: 24px;
+    }
+
+     .back-button:hover {
+        transform: translateX(-2px);
+        color: #3e8e41;
+    }
+
+    .login-header h1 {
+        color: var(--text-color);
+        font-size: 24px;
+        text-align: center;
+        width: 100%; 
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-color);
+        font-weight: 500;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 16px;
+        transition: border 0.3s;
+    }
+
+    .form-group input:focus {
+        border-color: white;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+
+    .mac-group {
+        display: flex;
+        gap: 10px;
+    }
+
+    .mac-group input {
+        flex: 1;
+    }
+
+    .secondary-button {
+        background-color: #6c757d;
+        color: white;
+        padding: 12px 15px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        white-space: nowrap;
+    }
+
+    .secondary-button:hover {
+        background-color: #5a6268;
+    }
+
+    .login-button {
+        width: 100%;
+        background-color: #4caf50;
+        color: white;
+        padding: 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .login-button:hover {
+        background-color: #3e8e41;
+    }
+
+    .form-actions {
+        margin-top: 25px;
+    }
+
+    @media (max-width: 480px) {
+        .login-card {
+            padding: 20px;
+        }
+
+        .login-header h1 {
+            font-size: 20px;
+        }
+
+        .mac-group {
+            flex-direction: column;
+        }
+
+        .secondary-button {
+            width: 100%;
+        }
+    }
+</style>
+<script>
+    function generateMAC() {
+        const hexDigits = "0123456789ABCDEF";
+        let mac = "";
+        for (let i = 0; i < 6; i++) {
+            mac += hexDigits.charAt(Math.floor(Math.random() * 16));
+            mac += hexDigits.charAt(Math.floor(Math.random() * 16));
+            if (i < 5) mac += ":";
+        }
+        const firstByte = parseInt(mac.substring(0, 2), 16);
+        const newFirstByte = (firstByte | 0x02) & 0xFE;
+        const newFirstHex = newFirstByte.toString(16).padStart(2, '0').toUpperCase();
+        document.getElementById("mac").value = newFirstHex + mac.substring(2);
+    }
+</script>
+}

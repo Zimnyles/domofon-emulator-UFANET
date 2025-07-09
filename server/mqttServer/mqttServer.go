@@ -58,6 +58,77 @@ func (s *Server) Disconnect() {
 	s.logger.Info().Msg("MQTT client disconnected")
 }
 
+func (s *Server) MonitorIntercomStatus(ctx context.Context) {
+	activeIntercoms := make(map[int]time.Time)
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	err := s.Subscribe("intercom/status/+", func(payload []byte) {
+		var status struct {
+			ID int `json:"id"`
+		}
+
+		if err := json.Unmarshal(payload, &status); err != nil {
+			s.logger.Error().Err(err).Msg("Failed to parse intercom status")
+			return
+		}
+
+		now := time.Now()
+
+		intercom, err := s.mqqtServerRepository.GetIntercomByID(status.ID, s.logger)
+		if err != nil {
+			s.logger.Error().Err(err).Int("intercom_id", status.ID).
+				Msg("Failed to get intercom status")
+			return
+		}
+
+		if !intercom.IsActive {
+			err := s.mqqtServerRepository.UpdateIntercomActiveStatus(status.ID, true)
+			if err != nil {
+				s.logger.Error().Err(err).Int("intercom_id", status.ID).
+					Msg("Failed to mark intercom as active")
+				return
+			}
+			intercomData, _ := s.mqqtServerRepository.GetIntercomByID(status.ID, s.logger)
+			responseTopic := fmt.Sprintf("intercom/activestatus/%d", status.ID)
+			s.Publish(responseTopic, intercomData)
+		}
+
+		activeIntercoms[status.ID] = now
+	})
+
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to subscribe to intercom status topics")
+		return
+	}
+
+	for {
+		select {
+		case <-ticker.C:
+			now := time.Now()
+			for id, lastActiveTime := range activeIntercoms {
+				if now.Sub(lastActiveTime) > 2*time.Minute {
+					err := s.mqqtServerRepository.UpdateIntercomActiveStatus(id, false)
+					if err != nil {
+						s.logger.Error().Err(err).Int("intercom_id", id).
+							Msg("Failed to mark intercom as inactive")
+						continue
+					}
+
+					intercomData, _ := s.mqqtServerRepository.GetIntercomByID(id, s.logger)
+					responseTopic := fmt.Sprintf("intercom/activestatus/%d", id)
+					s.Publish(responseTopic, intercomData)
+
+					delete(activeIntercoms, id)
+				}
+			}
+
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
 func (s *Server) ListenForCalls(ctx context.Context) {
 	err := s.Subscribe("intercom/fromclient/call", func(payload []byte) {
 		var callRequest struct {
@@ -73,13 +144,13 @@ func (s *Server) ListenForCalls(ctx context.Context) {
 
 		isCall := callRequest.Action == "call"
 		if isCall {
-			err := s.mqqtServerRepository.UpdateCallStatus(callRequest.ID, isCall)
+			err := s.mqqtServerRepository.UpdateCallStatus(callRequest.ID, isCall, callRequest.Apartment)
 			if err != nil {
 				s.logger.Error().Err(err).Msg("Failed to update door status")
 				return
 			}
 		} else {
-			err := s.mqqtServerRepository.UpdateCallStatus(callRequest.ID, isCall)
+			err := s.mqqtServerRepository.UpdateCallStatus(callRequest.ID, isCall, callRequest.Apartment)
 			if err != nil {
 				s.logger.Error().Err(err).Msg("Failed to update door status")
 				return
@@ -124,13 +195,13 @@ func (s *Server) ListenForDoorControl(ctx context.Context) {
 
 		isOpen := doorRequest.Action == "open"
 		if isOpen {
-			err := s.mqqtServerRepository.UpdateIntercomDoorStatus(doorRequest.ID, isOpen)
+			err := s.mqqtServerRepository.UpdateIntercomDoorStatus(doorRequest.ID, isOpen, doorRequest.Apartment)
 			if err != nil {
 				s.logger.Error().Err(err).Msg("Failed to update door status")
 				return
 			}
 		} else {
-			err := s.mqqtServerRepository.UpdateIntercomDoorStatus(doorRequest.ID, isOpen)
+			err := s.mqqtServerRepository.UpdateIntercomDoorStatus(doorRequest.ID, isOpen, doorRequest.Apartment)
 			if err != nil {
 				s.logger.Error().Err(err).Msg("Failed to update door status")
 				return

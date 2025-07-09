@@ -28,6 +28,7 @@ type IApiService interface {
 	CloseDoorRequest(id int) (bool, string, *models.Intercom)
 	CallRequest(id int, apartment int) (bool, string, *models.Intercom)
 	EndCallRequest(id int) (bool, string, *models.Intercom)
+	SendActualData(intercomData models.Intercom) error
 }
 
 func NewHandler(router fiber.Router, logger *zerolog.Logger, apiService IApiService, sessionStorage *storage.SessionStorage) {
@@ -74,6 +75,7 @@ func (h *ApiHandler) apiCallIntercom(c *fiber.Ctx) error {
 	}
 
 	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	h.apiService.SendActualData(*intercomData)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to update session data")
 		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")
@@ -103,6 +105,7 @@ func (h *ApiHandler) apiEndCallIntercom(c *fiber.Ctx) error {
 	}
 
 	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	h.apiService.SendActualData(*intercomData)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to update session data")
 		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")
@@ -134,6 +137,7 @@ func (h *ApiHandler) apiCloseIntercom(c *fiber.Ctx) error {
 	}
 
 	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	h.apiService.SendActualData(*intercomData)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to update session data")
 		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")
@@ -170,6 +174,7 @@ func (h *ApiHandler) apiOpenIntercom(c *fiber.Ctx) error {
 	}
 
 	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	h.apiService.SendActualData(*intercomData)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to update session data")
 		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")
@@ -200,6 +205,7 @@ func (h *ApiHandler) apiPowerIntercom(c *fiber.Ctx) error {
 	}
 
 	err = h.sessionStorage.SetActiveIntercomData(c, *intercomData)
+	h.apiService.SendActualData(*intercomData)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to update session data")
 		return h.renderError(c, "Ошибка сохранения данных. Обратитесь к системному администратору")

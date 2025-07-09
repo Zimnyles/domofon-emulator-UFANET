@@ -1,0 +1,234 @@
+package pages
+
+import "domofonEmulator/server/web/views/layout"
+
+templ HomePage() {
+@layout.Layout(layout.LayoutProps{
+Title: "DomofonPanel - Подключение домофона",
+MetaDescription: "Подключение или регистрация нового домофона",
+}){
+<main>
+    @HomePageStyle()
+    <div class="choice-container">
+        <div class="choice-card">
+            <div class="choice-header">
+                <h1>Подключитесь к домофону для управления</h1>
+                <img src="/server/web/static/icons/un-logo.png" width="341px" height="173px" alt="ufanetlogo" />
+            </div>
+            
+
+            <div class="choice-options">
+                <div class="option-card">
+                    <h2>Подключиться по идентификатору</h2>
+                    <p>Введите уникальный идентификатор домофона для удаленного подключения и управления. Идентификатор домофона по адресу можно уточнить в базе знаний.</p>
+                    <form hx-post="/intercom/redirect" hx-target="body" hx-swap="none" hx-trigger="submit" class="choice-form" _="on htmx:afterRequest(event)
+                             if event.detail.successful
+                                window.location.href = '/intercom/' + document.getElementById('intercom-id').value
+                             end">
+                        <div class="form-group">
+                            <label for="intercom-id">ID домофона</label>
+                            <input type="text" id="intercom-id" name="intercomID" required placeholder="Введите ID домофона">
+                        </div>
+                        <button type="submit" class="choice-button">
+                            Подключить
+                        </button>
+                        <div id="notification-area"></div>
+                    </form>
+
+                </div>
+
+                <div class="option-divider">
+                    <span>или</span>
+                </div>
+
+                <div class="option-card">
+                    <h2>Зарегистрировать новый</h2>
+                    <p>Для управления новым домофоном его нужно зарегестрировать в системе.</p>
+                    <div class="choice-button-secondary-wrapper"><a href="/create" class="choice-button secondary">
+                        Зарегистрировать
+                    </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+}
+}
+
+templ HomePageStyle() {
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background-color: var(--light-gray);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .choice-container {
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .choice-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        transition: transform 0.3s ease;
+    }
+
+
+    .choice-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .choice-header h1 {
+        color: var(--text-color);
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+
+    .choice-options {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .option-card {
+        background: #f9f9f9;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .option-card:hover {
+        background: #f0f0f0;
+        transform: translateY(-2px);
+    }
+
+    .option-card h2 {
+        color: var(--text-color);
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    .option-card p {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    .option-divider {
+        display: flex;
+        align-items: center;
+        margin: 10px 0;
+    }
+
+    .option-divider::before,
+    .option-divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .option-divider span {
+        padding: 0 10px;
+        color: var(--text-secondary);
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-color);
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border 0.3s;
+    }
+
+    .form-group input:focus {
+        border-color: var(--primary-color);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+
+    .choice-button {
+        width: 100%;
+        background-color: #4caf50;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        transition: background-color 0.3s;
+        text-decoration: none;
+    }
+
+    .choice-button:hover {
+        background-color: #3e8e41;
+    }
+
+    .choice-button.secondary {
+        background-color: #2196F3;
+    }
+
+    .choice-button.secondary:hover {
+        background-color: #0b7dda;
+    }
+
+    .choice-button-secondary-wrapper{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 15px;
+        
+    }
+
+
+    .link {
+        color: var(--primary-color);
+        text-decoration: none;
+        transition: color 0.2s;
+        text-decoration: none;
+    }
+
+    .link:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+        .choice-card {
+            padding: 20px;
+        }
+
+        .choice-header h1 {
+            font-size: 20px;
+        }
+    }
+</style>
+}
