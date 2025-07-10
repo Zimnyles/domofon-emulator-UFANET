@@ -34,8 +34,8 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, mqttServer mqttserv
 		store:      store,
 	}
 
-	h.router.Get("/connect", middleware.AuthMiddleware(store), h.connectToIntercom)
-	h.router.Get("/create", middleware.AuthMiddleware(store), h.createIntercome)
+	h.router.Get("/connect", middleware.AuthRequired(store), h.connectToIntercom)
+	h.router.Get("/create", middleware.AuthRequired(store), h.createIntercome)
 
 }
 

@@ -7,7 +7,6 @@ import (
 	"domofonEmulator/server/web/views/components"
 	"domofonEmulator/server/web/views/pages"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -51,24 +50,26 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, mqttServer mqttserv
 
 	h.router.Post("/api/login", h.apiLogin)
 	h.router.Post("/api/register", h.apiRegister)
-
-	router.Get("/live/intercom/:id", h.HandleLiveIntercomPage)
+	h.router.Get("api/logout", h.apiLogout)
 
 }
 
-func (h *AuthHandler) HandleLiveIntercomPage(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
+func (h *AuthHandler) apiLogout(c *fiber.Ctx) error {
+
+	sess, err := h.store.Get(c)
 	if err != nil {
-		return c.Status(400).SendString("Invalid intercom ID")
+		panic(err)
 	}
 
-	intercom, err := h.repository.GetIntercomByID(id, h.logger)
-	if err != nil {
-		return c.Status(404).SendString("Intercom not found")
+	sess.Delete("login")
+
+	if err := sess.Save(); err != nil {
+		panic(err)
 	}
 
-	component := pages.LiveIntercomPage(intercom)
-	return tadapter.Render(c, component, fiber.StatusOK)
+	c.Response().Header.Add("Hx-Redirect", "/login")
+	return c.Redirect("/", http.StatusOK)
+
 }
 
 func (h *AuthHandler) login(c *fiber.Ctx) error {

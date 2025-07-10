@@ -29,6 +29,7 @@ func NewRedisStorage(config config.RedisConfig) *SessionStorage {
 
 	return &SessionStorage{
 		Store: session.New(session.Config{
+			CookieName: "client_session_3030",
 			Storage:    redisStore,
 			Expiration: 24 * time.Hour,
 			KeyLookup:  "cookie:session_id",

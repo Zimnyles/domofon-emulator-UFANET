@@ -45,13 +45,14 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, mqttServer mqttserv
 		wsClients:  make(map[string]map[*websocket.Conn]bool),
 	}
 
-	h.router.Get("/intercom/:id", middleware.AuthMiddleware(store), h.intercomControl)
-	h.router.Get("/ws/intercom/:id", middleware.AuthMiddleware(store), websocket.New(h.websocketHandler))
-	h.router.Get("/ws/intercom/actualstatus/:id", middleware.AuthMiddleware(store), websocket.New(h.websocketHandler))
-	h.router.Get("/ws/intercom/opendoor/:id", middleware.AuthMiddleware(store), websocket.New(h.websocketHandler))
-	h.router.Get("/ws/intercom/activestatus/:id", middleware.AuthMiddleware(store), websocket.New(h.websocketHandler))
+	h.router.Get("/intercom/:id", middleware.AuthRequired(store), h.intercomControl)
+	h.router.Get("/ws/intercom/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
+	h.router.Get("/ws/intercom/status/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
+	h.router.Get("/ws/intercom/actualstatus/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
+	h.router.Get("/ws/intercom/opendoor/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
+	h.router.Get("/ws/intercom/activestatus/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
 
-	h.router.Post("/intercom/redirect", middleware.AuthMiddleware(store), h.redirectToIntercom)
+	h.router.Post("/intercom/redirect", middleware.AuthRequired(store), h.redirectToIntercom)
 
 	topicStatus := "intercom/status/+"
 	err := mqttServer.Subscribe(topicStatus, func(payload []byte) {
@@ -89,26 +90,30 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, mqttServer mqttserv
 
 func (h *IntercomHandler) handleMqttMessage(topicPrefix string, payload []byte) {
 	var msg struct {
-		ID       int  `json:"id"`
-		IsActive bool `json:"is_active"`
+		ID int `json:"id"`
 	}
 	if err := json.Unmarshal(payload, &msg); err != nil {
 		h.logger.Error().Err(err).Msg("mqtt message parsing error")
 		return
 	}
+
 	intercomID := strconv.Itoa(msg.ID)
-	if topicPrefix == "activestatus" {
-		response := map[string]interface{}{
-			"is_active": msg.IsActive,
-		}
-		responseData, _ := json.Marshal(response)
-		h.broadcastToClients(intercomID, responseData)
+
+	intercomData, err := h.service.GetIntercomDataById(msg.ID)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("failed to get intercom data")
 		return
 	}
-	wrappedMsg := map[string]json.RawMessage{
-		topicPrefix: payload,
+
+	wrappedMsg := map[string]interface{}{
+		topicPrefix: intercomData,
 	}
-	wrappedData, _ := json.Marshal(wrappedMsg)
+	wrappedData, err := json.Marshal(wrappedMsg)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("failed to marshal response")
+		return
+	}
+
 	h.broadcastToClients(intercomID, wrappedData)
 }
 
@@ -123,7 +128,15 @@ func (h *IntercomHandler) intercomControl(c *fiber.Ctx) error {
 
 	intercomData, _ := h.service.GetIntercomDataById(intercomID)
 
-	component := pages.LiveIntercomPage(intercomData)
+	sess, err := h.store.Get(c)
+	if err != nil {
+		h.logger.Fatal().Err(err).Msg("Failed to get session store")
+		panic(err)
+	}
+
+	userLogin := sess.Get("login").(string)
+
+	component := pages.LiveIntercomPage(intercomData, userLogin)
 	return tadapter.Render(c, component, fiber.StatusOK)
 
 }

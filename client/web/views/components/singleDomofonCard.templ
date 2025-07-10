@@ -110,13 +110,13 @@ templ SingleDomofonCard(props models.Intercom) {
                     </div>
                     <div class="doorcontrol-wrapper">
                         <button type="submit" class="control-button open-button">
-                            <img width="16" height="16" class="dooricon" src="/client/web/static/icons/door.svg" alt="Открыть" />
+                            <img width="16" height="16" class="dooricon-button" src="/client/web/static/icons/door.svg" alt="Открыть" />
                             Открыть дверь
                         </button>
                     
                         <button type="button" class="control-button close-button" hx-post="/api/closeIntercom"
                             hx-target="#notification-area" hx-include="[name='opendoor']" hx-trigger="click" hx-swap="innerHTML">
-                            <img width="16" height="16" class="dooricon" src="/client/web/static/icons/door.svg" alt="Закрыть" />
+                            <img width="16" height="16" class="dooricon-button" src="/client/web/static/icons/door.svg" alt="Закрыть" />
                             Закрыть дверь
                         </button>
                     </div>
@@ -147,15 +147,6 @@ templ SingleDomofonCard(props models.Intercom) {
                         </button>
                         </div>
                     </form>
-                </div>
-                <div class="simulate-button-wrapper">
-                    if props.IntercomStatus == true {
-                    {{ simulationClass := "control-button power-buttonOFF-sim" }}
-                    <input type="hidden" name="action" value="off">
-                    <button type="submit" class={ simulationClass }>
-                        <span>Симулировать выключение</span>
-                    </button>
-                    }
                 </div>
             </div>
 

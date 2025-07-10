@@ -6,7 +6,7 @@ import (
 
 )
 
-templ LiveIntercomPage(intercom models.Intercom) {
+templ LiveIntercomPage(intercom models.Intercom, login string) {
 @layout.Layout(layout.LayoutProps{
 Title: "Онлайн контроль домофона",
 MetaDescription: "Онлайн контроль домофона",
@@ -14,7 +14,7 @@ MetaDescription: "Онлайн контроль домофона",
 <main class="live-intercom-container">
     @LiveIntercomStyles()
     {{ login := ctx.Value("login").(string) }}
-    <div class="header-login"><span>Добрый день, { login }!</span></div>
+    <div class="header-login"><span>Добрый день, { login }!</span><a class="logoutlink" hx-trigger="click" hx-get="/api/logout">Выйти</a></div>
     <div class="header">
         <h1>Вы управляете домофоном ID:{ intercom.ID }</h1>
         <div class="connection-status" id="connection-status">
@@ -39,7 +39,7 @@ MetaDescription: "Онлайн контроль домофона",
         @IntercomStatusCard(intercom)
     </div>
     <div class="notification-area" id="notification-area"></div>
-    @MqttClientScript(intercom)
+    @MqttServerScript(intercom)
 </main>
 }
 }
@@ -125,32 +125,55 @@ templ IntercomActualStatusCard(intercom models.Intercom) {
 </div>
 
 <div class="action-buttons-wrapper">
-<div class="action-buttons">
-    <form hx-post="/api/opendoorIntercom"
-    hx-target="#intercom-response-container"
-    hx-swap="innerHTML"
-    style="display: inline;">
-        <input type="hidden" name="intercom_id" value={ intercom.ID }>
-        <button type="submit" class="open-button">
-            <img width="16" height="16" class="dooricon" src="/server/web/static/icons/door.svg" alt="Открыть" />
-            Открыть дверь
-        </button>
-    </form>
-</div>
-<div class="action-buttons">
-    <form hx-post="/api/closedoorIntercom" hx-target="#intercom-response-container" hx-swap="innerHTML"
-        style="display: inline;">
-        <input type="hidden" name="intercom_id" value={ intercom.ID }>
-        <button type="submit" class="off-button">
-            <img width="16" height="16" class="dooricon" src="/server/web/static/icons/door.svg" alt="Открыть" />
-            Закрыть дверь
-        </button>
-    </form>
-</div>
-<div id="intercom-response-container"></div>
+    <div class="action-buttons">
+        <form hx-post="/api/opendoorIntercom" hx-target="#intercom-response-container" hx-swap="innerHTML"
+            style="display: inline;" id="open-door-form">
+            <input type="hidden" name="intercom_id" value={ intercom.ID }>
+            <button type="submit" class="open-button" id="open-door-btn">
+                <img width="16" height="16" class="dooricon" src="/server/web/static/icons/door.svg" alt="Открыть" />
+                Открыть дверь
+            </button>
+        </form>
+    </div>
+    <div class="action-buttons">
+        <form hx-post="/api/closedoorIntercom" hx-target="#intercom-response-container" hx-swap="innerHTML"
+            style="display: inline;" id="close-door-form">
+            <input type="hidden" name="intercom_id" value={ intercom.ID }>
+            <button type="submit" class="off-button" id="close-door-btn" disabled>
+                <img width="16" height="16" class="dooricon" src="/server/web/static/icons/door.svg" alt="Закрыть" />
+                Закрыть дверь
+            </button>
+        </form>
+    </div>
+    <div id="intercom-response-container"></div>
 </div>
 
-
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const openForm = document.getElementById('open-door-form');
+        const closeForm = document.getElementById('close-door-form');
+        const openBtn = document.getElementById('open-door-btn');
+        const closeBtn = document.getElementById('close-door-btn');
+        if (openForm && closeForm) {
+            openForm.addEventListener('htmx:afterRequest', function (evt) {
+                if (evt.detail.successful) {
+                    closeBtn.disabled = false;
+                    openBtn.disabled = true;
+                    closeBtn.classList.remove('disabled-btn');
+                    openBtn.classList.add('disabled-btn');
+                }
+            });
+            closeForm.addEventListener('htmx:afterRequest', function (evt) {
+                if (evt.detail.successful) {
+                    openBtn.disabled = false;
+                    closeBtn.disabled = true;
+                    openBtn.classList.remove('disabled-btn');
+                    closeBtn.classList.add('disabled-btn');
+                }
+            });
+        }
+    });
+</script>
 }
 
 templ IntercomStatusCard(intercom models.Intercom) {
@@ -198,7 +221,7 @@ templ IntercomStatusCard(intercom models.Intercom) {
 </div>
 }
 
-templ MqttClientScript(intercom models.Intercom) {
+templ MqttServerScript(intercom models.Intercom) {
 
 <script>
         const intercomID = {{ intercom.ID }};
@@ -206,7 +229,7 @@ templ MqttClientScript(intercom models.Intercom) {
         const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
         const wsBase = `${wsProtocol}://${window.location.host}`;
 
-        const statusSocket = new WebSocket(`${wsBase}/ws/intercom/${intercomID}`);
+        const statusSocket = new WebSocket(`${wsBase}/ws/intercom/status/${intercomID}`);
         const actualStatusSocket = new WebSocket(`${wsBase}/ws/intercom/actualstatus/${intercomID}`);
         const activeStatusSocket = new WebSocket(`${wsBase}/ws/intercom/activestatus/${intercomID}`);
         activeStatusSocket.onopen = () => {
@@ -234,16 +257,17 @@ templ MqttClientScript(intercom models.Intercom) {
         statusSocket.onmessage = function (event) {
             try {
                 const msg = JSON.parse(event.data);
-                if (msg.status) updateIntercomStatus(msg.status);
+                console.log("WebSocket statusSocket message received:", msg);
+                console.log( msg.activestatus );
+                if (msg.activestatus) updateIntercomStatus(msg.activestatus);
             } catch (e) {
-                console.error("Ошибка разбора данных Ws:", e);
             }
         };
 
         activeStatusSocket.onmessage = function (event) {
                 try {
                     const msg = JSON.parse(event.data);
-                    console.log("WebSocket message received:", msg);
+                    console.log("WebSocket activeStatusSocket message received:", msg);
                     if (msg.activestatus && typeof msg.activestatus.is_active !== 'undefined') {
                         updateActiveStatus(msg.activestatus.is_active);
                         return;
@@ -252,9 +276,8 @@ templ MqttClientScript(intercom models.Intercom) {
                         updateActiveStatus(msg.is_active);
                         return;
                     }
-                    console.warn("Active status not found in message:", msg);
                 } catch (e) {
-                    console.error("Error processing WebSocket message:", e, "Raw data:", event.data);
+                    console.error("ws error:", e, "Raw data:", event.data);
                 }
             };
         function updateActiveStatus(isActive) {
@@ -279,15 +302,16 @@ templ MqttClientScript(intercom models.Intercom) {
     actualStatusSocket.onmessage = function (event) {
         try {
             const msg = JSON.parse(event.data);
-
+            console.log("WebSocket actualstatusSocket message received:", msg);
             if (msg.actualstatus) updateIntercomActualStatus(msg.actualstatus);
         } catch (e) {
             console.error("Ошибка Ws:", e);
         }
     };
 
+    
+
     function updateIntercomStatus(data) {
-        console.log("Получено сообщение:", msg);
         const intercomEl = document.getElementById('intercom-status');
         intercomEl.textContent = data.intercom_status === true ? 'Включен' : 'Выключен';
         intercomEl.style.color = data.intercom_status === true ? 'green' : 'red';
@@ -411,8 +435,31 @@ templ LiveIntercomStyles() {
         transition: background-color 0.3s;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .off-button:hover{
-        background-color: rgb(212, 53, 53);
+    .open-button:disabled,
+    .off-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: #cccccc;
+    }   
+
+    .open-button:not(:disabled),
+    .off-button:not(:disabled) {
+        cursor: pointer;
+    }
+
+    .logoutlink{
+        text-decoration:underline;
+        cursor: pointer;
+    }
+
+    .off-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: #cccccc;
+    }
+    
+    .disabled-btn {
+        pointer-events: none;
     }
     .open-button:hover {
         background-color: #3e8e41;
@@ -432,6 +479,9 @@ templ LiveIntercomStyles() {
         font-size: 0.9rem;
         color: #555;
         margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
     .header {
         display: flex;
