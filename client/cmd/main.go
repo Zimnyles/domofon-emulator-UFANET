@@ -10,7 +10,6 @@ import (
 	"domofonEmulator/pkg/database"
 	"domofonEmulator/pkg/logger"
 
-	// "time"
 
 	"github.com/gofiber/contrib/fiberzerolog"
 	"github.com/gofiber/fiber/v2"
