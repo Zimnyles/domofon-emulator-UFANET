@@ -4,8 +4,8 @@ import "domofonEmulator/server/web/views/layout"
 
 templ RegisterPage() {
 @layout.Layout(layout.LayoutProps{
-Title: "DomofonPanel - Регистрация",
-MetaDescription: "Регистрация в DomofonPanel",
+Title: "Регистрация",
+MetaDescription: "Регистрация",
 }){
 <main>
     @RegisterPageStyle()
@@ -15,7 +15,7 @@ MetaDescription: "Регистрация в DomofonPanel",
                 <h1>Регистрация</h1>
                 <img src="/server/web/static/icons/un-logo.png" width="341px" height="173px" alt="ufanetlogo" />
             </div>
-            <div id="notification-area"></div>
+            
             <form hx-post="/api/register" hx-target="#notification-area" hx-swap="innerHTML" hx-trigger="submit"
                 class="login-form" enctype="multipart/form-data">
                 <div class="form-group">
@@ -45,7 +45,7 @@ MetaDescription: "Регистрация в DomofonPanel",
                     </button>
                 </div>
             </form>
-
+            <div id="notification-area"></div>
             <div class="login-footer">
                 <a href="/login" class="link">Войти</a>
             </div>

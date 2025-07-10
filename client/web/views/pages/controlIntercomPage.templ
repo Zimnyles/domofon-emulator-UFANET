@@ -115,69 +115,126 @@ templ ControlInetcomPageStyle() {
 }
 
 templ ControlIntercomScript(props models.Intercom) {
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const intercomDataElem = document.getElementById("intercom-data");
-            if (!intercomDataElem) return;
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const intercomDataElem = document.getElementById("intercom-data");
+        if (!intercomDataElem) {
+            console.warn("intercom-data element not found");
+            return;
+        }
+        try {
             const intercom = JSON.parse(intercomDataElem.dataset.intercom);
-            const intercomID = intercom.id;
+            const intercomID = intercom?.id;
+            if (!intercomID) {
+                console.error("Intercom ID is missing");
+                return;
+            }
             function setButtonsState(isDisabled) {
+                const disabledState = Boolean(isDisabled);
                 const allButtons = document.querySelectorAll('button');
                 allButtons.forEach(btn => {
-                    btn.disabled = isDisabled;
-                    btn.style.opacity = isDisabled ? 0.5 : 1;
-                    btn.style.cursor = isDisabled ? 'not-allowed' : 'pointer';
+                    btn.disabled = disabledState;
+                    btn.style.opacity = disabledState ? 0.5 : 1;
+                    btn.style.cursor = disabledState ? 'not-allowed' : 'pointer';
                 });
-                localStorage.setItem(`buttonsState_${intercomID}`, isDisabled.toString());
+                localStorage.setItem(`buttonsState_${intercomID}`, String(disabledState));
+                console.log(`Buttons state set to disabled=${disabledState}`);
             }
-            function updateDoorStatus(isOpen) {
+            function updateDoorVisual(isOpen) {
+                const doorStatus = Boolean(isOpen);
                 document.querySelectorAll('.dooricon').forEach(icon => {
-                    icon.src = isOpen
+                    icon.src = doorStatus
                         ? '/client/web/static/icons/door-active.svg'
                         : '/client/web/static/icons/door-inactive.svg';
                 });
                 document.querySelectorAll('.door-status').forEach(text => {
-                    text.textContent = isOpen ? 'открыта' : 'закрыта';
-                    text.className = isOpen ? 'door-status open' : 'door-status closed';
+                    text.textContent = doorStatus ? 'открыта' : 'закрыта';
+                    text.className = doorStatus ? 'door-status open' : 'door-status closed';
                 });
-                setButtonsState(isOpen);
-                localStorage.setItem(`doorStatus_${intercomID}`, isOpen.toString());
+            }
+            function updateDoorStatusFromUser(isOpen) {
+                const doorStatus = Boolean(isOpen);
+                updateDoorVisual(doorStatus);
+                localStorage.setItem(`doorStatus_${intercomID}`, String(doorStatus));
+                console.log(`Door status updated by user: ${doorStatus}`);
+            }
+            function updateDoorStatusFromWS(isOpen) {
+                const doorStatus = Boolean(isOpen);
+                updateDoorVisual(doorStatus);
+                setButtonsState(doorStatus);
+                localStorage.setItem(`doorStatus_${intercomID}`, String(doorStatus));
+                console.log(`Door status updated from WS: ${doorStatus}`);
             }
             function restoreState() {
-                const savedDoorStatus = localStorage.getItem(`doorStatus_${intercomID}`) === 'true';
-                const savedButtonsState = localStorage.getItem(`buttonsState_${intercomID}`) === 'true';
-                const doorStatus = savedDoorStatus !== null ? savedDoorStatus : intercom.DoorStatus;
-                updateDoorStatus(doorStatus);
-                if (savedButtonsState !== null) {
-                    setButtonsState(savedButtonsState);
+                try {
+                    const savedDoorStatusRaw = localStorage.getItem(`doorStatus_${intercomID}`);
+                    const savedButtonsStateRaw = localStorage.getItem(`buttonsState_${intercomID}`);
+                    console.log('restoreState - savedDoorStatusRaw:', savedDoorStatusRaw);
+                    console.log('restoreState - savedButtonsStateRaw:', savedButtonsStateRaw);
+                    const doorStatus = savedDoorStatusRaw !== null
+                        ? savedDoorStatusRaw === 'true'
+                        : Boolean(intercom?.DoorStatus);
+                    const buttonsState = savedButtonsStateRaw !== null
+                        ? savedButtonsStateRaw === 'true'
+                        : doorStatus;
+                    updateDoorVisual(doorStatus);
+                    setButtonsState(buttonsState);
+                } catch (e) {
+                    console.error("Error restoring state:", e);
                 }
             }
             restoreState();
+            const openBtn = document.querySelector('button.open-button');
+            if (openBtn) {
+                openBtn.addEventListener('click', () => {
+                    console.log("User clicked Open door button");
+                    updateDoorStatusFromUser(true);
+                });
+            }
+            const closeBtn = document.querySelector('button.close-button');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    console.log("User clicked Close door button");
+                    updateDoorStatusFromUser(false);
+                });
+            }
             const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
             const socket = new WebSocket(`${protocol}://${window.location.host}/ws/intercom/${intercomID}`);
+            socket.onopen = function () {
+                console.log('WebSocket connected');
+            };
             socket.onmessage = function (event) {
                 try {
                     const data = JSON.parse(event.data);
+                    console.log('WebSocket message received:', data);
                     if (typeof data.door_status !== 'undefined') {
-                        updateDoorStatus(data.door_status);
+                        updateDoorStatusFromWS(data.door_status);
                     }
                 } catch (e) {
-                    console.error("ws message error:", e);
+                    console.error("WebSocket message parsing error:", e);
                 }
             };
             socket.onerror = function (error) {
-                console.error("ws error:", error);
+                console.error("WebSocket error:", error);
             };
-            window.addEventListener('beforeunload', function () {
-            });
-        });
-    </script>
-
+            socket.onclose = function () {
+                console.log('WebSocket closed');
+            };
+        } catch (e) {
+            console.error("Initialization error:", e);
+        }
+    });
+</script>
 
     {{ jsonData, err := json.Marshal(props) }}
     if err == nil {
     <div id="intercom-data" data-intercom={ string(jsonData) } style="display:none;"></div>
     }
+    <script>
+        setInterval(() => {
+            window.location.reload();
+        }, 30000);
+    </script>   
     <script>
         let publishIntervalId = null;
         function isPahoLoaded() {
@@ -251,7 +308,7 @@ templ ControlIntercomScript(props models.Intercom) {
             brokerHost: "127.0.0.1",
             brokerPort: 8083,
             clientId: "client-" + Math.random().toString(16).substr(2, 8),
-            topic: "intercom/status/" + {{ props.ID }},
+            topic: "intercom/fromclient/status/" + {{ props.ID }},
         interval: 30000
             };
 

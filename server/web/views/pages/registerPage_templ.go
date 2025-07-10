@@ -51,15 +51,15 @@ func RegisterPage() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"login-container\"><div class=\"login-card\"><div class=\"login-header\"><h1>Регистрация</h1><img src=\"/server/web/static/icons/un-logo.png\" width=\"341px\" height=\"173px\" alt=\"ufanetlogo\"></div><div id=\"notification-area\"></div><form hx-post=\"/api/register\" hx-target=\"#notification-area\" hx-swap=\"innerHTML\" hx-trigger=\"submit\" class=\"login-form\" enctype=\"multipart/form-data\"><div class=\"form-group\"><label for=\"username\">Логин</label> <input type=\"text\" id=\"username\" name=\"login\" required placeholder=\"Придумайте логин\"></div><div class=\"form-group\"><label for=\"email\">Email</label> <input type=\"email\" id=\"email\" name=\"email\" required placeholder=\"Введите ваш email\"></div><div class=\"form-group\"><label for=\"password\">Пароль</label> <input type=\"password\" id=\"password\" name=\"password\" required placeholder=\"••••••••\"></div><div class=\"form-group\"><label for=\"confirm-password\">Код приглашение</label> <input type=\"password\" id=\"secretcode\" name=\"secretcode\" required placeholder=\"Введите выданый вам код\"></div><div class=\"form-actions\"><button type=\"submit\" class=\"login-button\">Зарегистрироваться</button></div></form><div class=\"login-footer\"><a href=\"/login\" class=\"link\">Войти</a></div></div></div></main>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"login-container\"><div class=\"login-card\"><div class=\"login-header\"><h1>Регистрация</h1><img src=\"/server/web/static/icons/un-logo.png\" width=\"341px\" height=\"173px\" alt=\"ufanetlogo\"></div><form hx-post=\"/api/register\" hx-target=\"#notification-area\" hx-swap=\"innerHTML\" hx-trigger=\"submit\" class=\"login-form\" enctype=\"multipart/form-data\"><div class=\"form-group\"><label for=\"username\">Логин</label> <input type=\"text\" id=\"username\" name=\"login\" required placeholder=\"Придумайте логин\"></div><div class=\"form-group\"><label for=\"email\">Email</label> <input type=\"email\" id=\"email\" name=\"email\" required placeholder=\"Введите ваш email\"></div><div class=\"form-group\"><label for=\"password\">Пароль</label> <input type=\"password\" id=\"password\" name=\"password\" required placeholder=\"••••••••\"></div><div class=\"form-group\"><label for=\"confirm-password\">Код приглашение</label> <input type=\"password\" id=\"secretcode\" name=\"secretcode\" required placeholder=\"Введите выданый вам код\"></div><div class=\"form-actions\"><button type=\"submit\" class=\"login-button\">Зарегистрироваться</button></div></form><div id=\"notification-area\"></div><div class=\"login-footer\"><a href=\"/login\" class=\"link\">Войти</a></div></div></div></main>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
 		templ_7745c5c3_Err = layout.Layout(layout.LayoutProps{
-			Title:           "DomofonPanel - Регистрация",
-			MetaDescription: "Регистрация в DomofonPanel",
+			Title:           "Регистрация",
+			MetaDescription: "Регистрация",
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

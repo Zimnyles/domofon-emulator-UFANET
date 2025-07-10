@@ -4,8 +4,8 @@ import "domofonEmulator/server/web/views/layout"
 
 templ HomePage() {
 @layout.Layout(layout.LayoutProps{
-Title: "DomofonPanel - Подключение домофона",
-MetaDescription: "Подключение или регистрация нового домофона",
+Title: "Подключение",
+MetaDescription: "Подключение",
 }){
 <main>
     @HomePageStyle()
@@ -20,7 +20,7 @@ MetaDescription: "Подключение или регистрация ново�
             <div class="choice-options">
                 <div class="option-card">
                     <h2>Подключиться по идентификатору</h2>
-                    <p>Введите уникальный идентификатор домофона для удаленного подключения и управления. Идентификатор домофона по адресу можно уточнить в базе знаний.</p>
+                    <p>Введите уникальный идентификатор домофона для удаленного подключения и управления</p>
                     <form hx-post="/intercom/redirect" hx-target="body" hx-swap="none" hx-trigger="submit" class="choice-form" _="on htmx:afterRequest(event)
                              if event.detail.successful
                                 window.location.href = '/intercom/' + document.getElementById('intercom-id').value
@@ -114,7 +114,6 @@ templ HomePageStyle() {
 
     .option-card:hover {
         background: #f0f0f0;
-        transform: translateY(-2px);
     }
 
     .option-card h2 {

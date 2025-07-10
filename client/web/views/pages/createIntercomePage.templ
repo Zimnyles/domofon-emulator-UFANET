@@ -4,8 +4,8 @@ import "domofonEmulator/client/web/views/layout"
 
 templ CreateIntercomePage() {
 @layout.Layout(layout.LayoutProps{
-Title: "DomofonPanel - Добавление домофона",
-MetaDescription: "Добавление нового домофона в систему",
+Title: "Добавление домофона",
+MetaDescription: "Добавление",
 }){
 <main>
     @CreateIntercomePageStyle()
@@ -90,8 +90,6 @@ templ CreateIntercomePageStyle() {
     }
 
     .login-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
     }
 
     .login-header {
@@ -123,7 +121,7 @@ templ CreateIntercomePageStyle() {
     }
 
      .back-button:hover {
-        transform: translateX(-2px);
+
         color: #3e8e41;
     }
 

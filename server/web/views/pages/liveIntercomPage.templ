@@ -229,7 +229,6 @@ templ MqttServerScript(intercom models.Intercom) {
         const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
         const wsBase = `${wsProtocol}://${window.location.host}`;
 
-        const statusSocket = new WebSocket(`${wsBase}/ws/intercom/status/${intercomID}`);
         const actualStatusSocket = new WebSocket(`${wsBase}/ws/intercom/actualstatus/${intercomID}`);
         const activeStatusSocket = new WebSocket(`${wsBase}/ws/intercom/activestatus/${intercomID}`);
         activeStatusSocket.onopen = () => {
@@ -243,37 +242,18 @@ templ MqttServerScript(intercom models.Intercom) {
                 updateConnectionStatus(false);
                 console.warn("intercom/activestatus отключен");
         };
-        statusSocket.onopen = () => {
-            updateConnectionStatus(true);
-            showNotification('Подключено к intercom/status', 'success');
-        };
-        statusSocket.onclose = () => {
-            updateConnectionStatus(false);
-            showNotification('intercom/status отключен', 'error');
-            setTimeout(() => location.reload(), 5000);
-        };
-        statusSocket.onerror = (error) => console.error("Ошибка WebSocket (status):", error);
-
-        statusSocket.onmessage = function (event) {
-            try {
-                const msg = JSON.parse(event.data);
-                console.log("WebSocket statusSocket message received:", msg);
-                console.log( msg.activestatus );
-                if (msg.activestatus) updateIntercomStatus(msg.activestatus);
-            } catch (e) {
-            }
-        };
-
         activeStatusSocket.onmessage = function (event) {
                 try {
                     const msg = JSON.parse(event.data);
                     console.log("WebSocket activeStatusSocket message received:", msg);
                     if (msg.activestatus && typeof msg.activestatus.is_active !== 'undefined') {
                         updateActiveStatus(msg.activestatus.is_active);
+                        updateIntercomStatus(msg.activestatus)
                         return;
                     }
                     if (typeof msg.is_active !== 'undefined') {
                         updateActiveStatus(msg.is_active);
+                        updateIntercomStatus(msg.activestatus)
                         return;
                     }
                 } catch (e) {
@@ -312,8 +292,9 @@ templ MqttServerScript(intercom models.Intercom) {
     
 
     function updateIntercomStatus(data) {
+        console.log(data);
         const intercomEl = document.getElementById('intercom-status');
-        intercomEl.textContent = data.intercom_status === true ? 'Включен' : 'Выключен';
+        intercomEl.textContent = data.aintercom_status === true ? 'Включен' : 'Выключен';
         intercomEl.style.color = data.intercom_status === true ? 'green' : 'red';
 
         const doorEl = document.getElementById('door-status');

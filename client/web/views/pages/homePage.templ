@@ -4,8 +4,8 @@ import "domofonEmulator/client/web/views/layout"
 
 templ HomePage() {
 @layout.Layout(layout.LayoutProps{
-Title: "DomofonPanel - Подключение домофона",
-MetaDescription: "Подключение или регистрация нового домофона",
+Title: "Подключение",
+MetaDescription: "Подключение",
 }){
 <main>
     @HomePageStyle()
@@ -20,7 +20,7 @@ MetaDescription: "Подключение или регистрация ново�
             <div class="choice-options">
                 <div class="option-card">
                     <h2>Подключить существующий</h2>
-                    <p>Уже есть зарегистрированный домофон? Введите его идентификатор для подключения.</p>
+                    <p>Введите уникальный идентификатор домофона</p>
                     <form hx-post="/api/connect/" hx-target="#notification-area" hx-swap="innerHTML"
                         hx-trigger="submit" class="choice-form">
                         <div class="form-group">
@@ -112,7 +112,7 @@ templ HomePageStyle() {
 
     .option-card:hover {
         background: #f0f0f0;
-        transform: translateY(-2px);
+
     }
 
     .option-card h2 {

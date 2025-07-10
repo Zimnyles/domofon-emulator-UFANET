@@ -23,7 +23,7 @@ type IntercomHandler struct {
 	mqttServer mqttserver.Server
 	repository IIntercomRepository
 	store      *session.Store
-	wsClients  map[string]map[*websocket.Conn]bool
+	wsClients  map[string]map[string]map[*websocket.Conn]bool
 }
 
 type IIntercomRepository interface {
@@ -42,15 +42,15 @@ func NewHandler(router fiber.Router, logger *zerolog.Logger, mqttServer mqttserv
 		service:    service,
 		repository: repository,
 		store:      store,
-		wsClients:  make(map[string]map[*websocket.Conn]bool),
+		wsClients:  make(map[string]map[string]map[*websocket.Conn]bool),
 	}
 
 	h.router.Get("/intercom/:id", middleware.AuthRequired(store), h.intercomControl)
-	h.router.Get("/ws/intercom/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
-	h.router.Get("/ws/intercom/status/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
-	h.router.Get("/ws/intercom/actualstatus/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
-	h.router.Get("/ws/intercom/opendoor/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
-	h.router.Get("/ws/intercom/activestatus/:id", middleware.AuthRequired(store), websocket.New(h.websocketHandler))
+	h.router.Get("/ws/intercom/:id", middleware.AuthRequired(store), h.makeWebSocketHandler("intercom"))
+	h.router.Get("/ws/intercom/status/:id", middleware.AuthRequired(store), h.makeWebSocketHandler("status"))
+	h.router.Get("/ws/intercom/actualstatus/:id", middleware.AuthRequired(store), h.makeWebSocketHandler("actualstatus"))
+	h.router.Get("/ws/intercom/opendoor/:id", middleware.AuthRequired(store), h.makeWebSocketHandler("opendoor"))
+	h.router.Get("/ws/intercom/activestatus/:id", middleware.AuthRequired(store), h.makeWebSocketHandler("activestatus"))
 
 	h.router.Post("/intercom/redirect", middleware.AuthRequired(store), h.redirectToIntercom)
 
@@ -114,7 +114,7 @@ func (h *IntercomHandler) handleMqttMessage(topicPrefix string, payload []byte) 
 		return
 	}
 
-	h.broadcastToClients(intercomID, wrappedData)
+	h.broadcastToClients(intercomID, topicPrefix, wrappedData)
 }
 
 func (h *IntercomHandler) redirectToIntercom(c *fiber.Ctx) error {
@@ -141,37 +141,46 @@ func (h *IntercomHandler) intercomControl(c *fiber.Ctx) error {
 
 }
 
-func (h *IntercomHandler) websocketHandler(c *websocket.Conn) {
-	intercomID := c.Params("id")
-
-	if h.wsClients[intercomID] == nil {
-		h.wsClients[intercomID] = make(map[*websocket.Conn]bool)
+func (h *IntercomHandler) broadcastToClients(intercomID string, topicPrefix string, message []byte) {
+	byIntercom, ok := h.wsClients[intercomID]
+	if !ok {
+		return
 	}
-	h.wsClients[intercomID][c] = true
-	h.logger.Info().Msgf("ws connection success, id: %s", intercomID)
-
-	defer func() {
-		delete(h.wsClients[intercomID], c)
-		c.Close()
-	}()
-
-	for {
-		if _, _, err := c.ReadMessage(); err != nil {
-			break
+	clientsForTopic, ok := byIntercom[topicPrefix]
+	if !ok {
+		return
+	}
+	for conn := range clientsForTopic {
+		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			h.logger.Error().Err(err).Msg("ws sending error")
+			conn.Close()
+			delete(clientsForTopic, conn)
 		}
 	}
 }
 
-func (h *IntercomHandler) broadcastToClients(intercomID string, message []byte) {
-	conns, ok := h.wsClients[intercomID]
-	if !ok {
-		return
-	}
-	for conn := range conns {
-		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
-			h.logger.Error().Err(err).Msg("ws sending error")
-			conn.Close()
-			delete(conns, conn)
+func (h *IntercomHandler) makeWebSocketHandler(eventType string) fiber.Handler {
+	return websocket.New(func(c *websocket.Conn) {
+		intercomID := c.Params("id")
+
+		if h.wsClients[intercomID] == nil {
+			h.wsClients[intercomID] = make(map[string]map[*websocket.Conn]bool)
 		}
-	}
+		if h.wsClients[intercomID][eventType] == nil {
+			h.wsClients[intercomID][eventType] = make(map[*websocket.Conn]bool)
+		}
+		h.wsClients[intercomID][eventType][c] = true
+		h.logger.Info().Msgf("WS connected: intercomID=%s, type=%s", intercomID, eventType)
+
+		defer func() {
+			delete(h.wsClients[intercomID][eventType], c)
+			c.Close()
+		}()
+
+		for {
+			if _, _, err := c.ReadMessage(); err != nil {
+				break
+			}
+		}
+	})
 }

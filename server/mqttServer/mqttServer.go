@@ -58,12 +58,24 @@ func (s *Server) Disconnect() {
 	s.logger.Info().Msg("MQTT client disconnected")
 }
 
+func (s *Server) publishIntercomStatus(id int) {
+	intercomData, err := s.mqqtServerRepository.GetIntercomByID(id, s.logger)
+	if err != nil {
+		s.logger.Error().Err(err).Int("intercom_id", id).
+			Msg("Failed to get intercom status for publishing")
+		return
+	}
+
+	responseTopic := fmt.Sprintf("intercom/activestatus/%d", id)
+	s.Publish(responseTopic, intercomData)
+}
+
 func (s *Server) MonitorIntercomStatus(ctx context.Context) {
 	activeIntercoms := make(map[int]time.Time)
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(31 * time.Second)
 	defer ticker.Stop()
 
-	err := s.Subscribe("intercom/status/+", func(payload []byte) {
+	err := s.Subscribe("intercom/fromclient/status/+", func(payload []byte) {
 		var status struct {
 			ID int `json:"id"`
 		}
@@ -89,9 +101,7 @@ func (s *Server) MonitorIntercomStatus(ctx context.Context) {
 					Msg("Failed to mark intercom as active")
 				return
 			}
-			intercomData, _ := s.mqqtServerRepository.GetIntercomByID(status.ID, s.logger)
-			responseTopic := fmt.Sprintf("intercom/activestatus/%d", status.ID)
-			s.Publish(responseTopic, intercomData)
+			s.publishIntercomStatus(status.ID)
 		}
 
 		activeIntercoms[status.ID] = now
@@ -107,6 +117,7 @@ func (s *Server) MonitorIntercomStatus(ctx context.Context) {
 		case <-ticker.C:
 			now := time.Now()
 			for id, lastActiveTime := range activeIntercoms {
+				s.publishIntercomStatus(id)
 				if now.Sub(lastActiveTime) > 2*time.Minute {
 					err := s.mqqtServerRepository.UpdateIntercomActiveStatus(id, false)
 					if err != nil {
@@ -114,11 +125,7 @@ func (s *Server) MonitorIntercomStatus(ctx context.Context) {
 							Msg("Failed to mark intercom as inactive")
 						continue
 					}
-
-					intercomData, _ := s.mqqtServerRepository.GetIntercomByID(id, s.logger)
-					responseTopic := fmt.Sprintf("intercom/activestatus/%d", id)
-					s.Publish(responseTopic, intercomData)
-
+					s.publishIntercomStatus(id)
 					delete(activeIntercoms, id)
 				}
 			}
@@ -127,6 +134,7 @@ func (s *Server) MonitorIntercomStatus(ctx context.Context) {
 			return
 		}
 	}
+
 }
 
 func (s *Server) ListenForCalls(ctx context.Context) {

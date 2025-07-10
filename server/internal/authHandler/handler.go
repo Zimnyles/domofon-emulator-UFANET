@@ -103,7 +103,7 @@ func (h *AuthHandler) apiLogin(c *fiber.Ctx) error {
 		c.Response().Header.Add("Hx-Redirect", "/connect")
 		return c.Redirect("/", http.StatusOK)
 	}
-	component := components.Notification(msg, false)
+	component := components.NewIntercomResponse(msg)
 	return tadapter.Render(c, component, fiber.StatusOK)
 }
 
@@ -130,6 +130,6 @@ func (h *AuthHandler) apiRegister(c *fiber.Ctx) error {
 		c.Response().Header.Add("Hx-Redirect", "/connect")
 		return c.Redirect("/", http.StatusOK)
 	}
-	component := components.Notification(msg, false)
+	component := components.NewIntercomResponse(msg)
 	return tadapter.Render(c, component, fiber.StatusOK)
 }

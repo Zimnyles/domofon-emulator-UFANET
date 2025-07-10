@@ -4,13 +4,13 @@ import "domofonEmulator/server/web/views/layout"
 
 templ CreateIntercomePage() {
 @layout.Layout(layout.LayoutProps{
-Title: "DomofonPanel - Добавление домофона",
-MetaDescription: "Добавление нового домофона в систему",
+Title: "Добавление домофона",
+MetaDescription: "Добавление",
 }){
 <main>
     @CreateIntercomePageStyle()
     <div class="login-container">
-        <div class="login-card">
+        <div class="create-card">
             <div class="login-header">
                 <div class="header-with-back">
                     <a href="/connect" class="back-button">
@@ -81,7 +81,7 @@ templ CreateIntercomePageStyle() {
         max-width: 600px;
     }
 
-    .login-card {
+    .create-card {
         background: white;
         border-radius: 10px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -118,7 +118,6 @@ templ CreateIntercomePageStyle() {
     }
 
      .back-button:hover {
-        transform: translateX(-2px);
         color: #3e8e41;
     }
 
@@ -202,23 +201,6 @@ templ CreateIntercomePageStyle() {
         margin-top: 25px;
     }
 
-    @media (max-width: 480px) {
-        .login-card {
-            padding: 20px;
-        }
-
-        .login-header h1 {
-            font-size: 20px;
-        }
-
-        .mac-group {
-            flex-direction: column;
-        }
-
-        .secondary-button {
-            width: 100%;
-        }
-    }
 </style>
 <script>
     function generateMAC() {

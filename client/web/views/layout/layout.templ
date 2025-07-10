@@ -25,16 +25,12 @@ templ Layout(props LayoutProps) {
         <meta property="og:description" coontent={props.MetaDescription} />
     </head>  
     <body style="background-color: #fafafa;"> 
-        @LayoutScript()
+
         { children... }
     </body> 
     </html>
 }
 
 templ LayoutScript() {
-    <script>
-        setInterval(() => {
-            window.location.reload();
-        }, 30000);
-    </script>
+
 }
